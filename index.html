@@ -1117,7 +1117,15 @@ new Vue({
     var app = document.querySelector('#app');
     if (app && app.__vue__) { try { app.__vue__.monitorRunning = !!v; } catch (e) {} }
   }
-  function doStart() {
+  function probeReady() {
+    return fetch(API + '/api/status').then(function (r) {
+      if (!r.ok) throw 0;
+      return r.json();
+    }).then(function (d) {
+      return !!(d && d.ok !== false);
+    }).catch(function () { return false; });
+  }
+  function fireCheck() {
     fetch(API + '/api/check', { method: 'POST' }).then(function (r) { return r.json(); }).then(function (d) {
       if (!d.ok) { alert(d.err || '启动失败'); return; }
       setMonitorRunning(true);
@@ -1128,7 +1136,33 @@ new Vue({
       window.monitorShow();
       poll();
     }).catch(function () {
-      alert('本地监控服务未启动\n请先运行: python monitor_server.py');
+      setStatus('连接失败', 'err');
+      alert('本地监控服务连接失败\n请手动双击「启动监控服务.bat」后再试');
+    });
+  }
+  function doStart() {
+    // 先探测本地服务是否已在运行
+    probeReady().then(function (ready) {
+      if (ready) { fireCheck(); return; }
+      // 服务未启动 -> 通过 douyinmon:// 协议唤起「启动监控服务.bat」
+      setStatus('启动服务中...');
+      try { window.location.href = 'douyinmon://start'; } catch (e) {}
+      var waited = 0;
+      var t = setInterval(function () {
+        waited += 1000;
+        probeReady().then(function (ok) {
+          if (ok) {
+            clearInterval(t);
+            fireCheck();
+          } else if (waited >= 30000) {
+            clearInterval(t);
+            setStatus('启动失败', 'err');
+            alert('本地服务启动超时，请手动双击「启动监控服务.bat」后再试');
+          } else {
+            setStatus('启动服务中... ' + Math.floor(waited / 1000) + 's');
+          }
+        });
+      }, 1000);
     });
   }
   window.confirmOk = function () {
