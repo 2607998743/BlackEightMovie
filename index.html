@@ -246,7 +246,7 @@
 .filter-btn .icon-svg { color: #4b5563; }
 .filter-btn.active .icon-svg { color: #4f7cff; }
 
-  /* ===== 一键抓取 ===== */
+  /* ===== 一键补全 ===== */
   .sidebar-footer { padding: 14px 16px; border-top: 1px solid #eef0f4; }
   .monitor-btn { width: 100%; height: 40px; border-radius: 10px; font-weight: 600; letter-spacing: 1px; }
   .monitor-hint { font-size: 11px; color: #9ca3af; text-align: center; margin-top: 8px; line-height: 1.6; }
@@ -347,9 +347,9 @@
       <div class="sidebar-footer">
         <el-button type="primary" class="monitor-btn" @click="startMonitor" :loading="monitorRunning" :disabled="monitorRunning">
           <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
-          {{ monitorRunning ? '抓取中...' : '抖音一键抓取' }}
+          {{ monitorRunning ? '补全中...' : '抖音一键补全' }}
         </el-button>
-        <div class="monitor-hint">检测老博主新万赞 · 发现新影视博主</div>
+        <div class="monitor-hint">全量重采所有博主（Playwright 滑到底，不 403）</div>
       </div>
     </el-aside>
 
@@ -987,13 +987,13 @@ new Vue({
 </script>
 
 
-<!-- 一键抓取日志面板 -->
+<!-- 一键补全日志面板 -->
 <div class="monitor-mask" id="monitorMask"></div>
 <div class="monitor-panel" id="monitorPanel">
   <div class="monitor-head">
     <div class="monitor-title">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#4f7cff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
-      一键抓取
+      一键补全
       <span class="monitor-status" id="monitorStatus">未开始</span>
     </div>
     <span class="monitor-close" onclick="monitorClose()">&times;</span>
@@ -1014,7 +1014,7 @@ new Vue({
   <div class="monitor-head">
     <div class="monitor-title">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#4f7cff" stroke-width="2" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="8" y1="3" x2="8" y2="7"/><line x1="16" y1="3" x2="16" y2="7"/></svg>
-      一键抓取历史
+      一键补全历史
     </div>
     <span class="monitor-close" onclick="window.historyClose()">&times;</span>
   </div>
@@ -1098,7 +1098,7 @@ new Vue({
             el('sNew').textContent = sm.new_blogger_count || 0;
           }).catch(function () {});
         } else if (d.running) {
-          setStatus('抓取中...');
+          setStatus('补全中...');
         }
       }).catch(function () {});
     }, 1500);
@@ -1126,13 +1126,13 @@ new Vue({
     }).catch(function () { return false; });
   }
   function fireCheck() {
-    fetch(API + '/api/check', { method: 'POST' }).then(function (r) { return r.json(); }).then(function (d) {
+    fetch(API + '/api/fullscan', { method: 'POST' }).then(function (r) { return r.json(); }).then(function (d) {
       if (!d.ok) { alert(d.err || '启动失败'); return; }
       setMonitorRunning(true);
       started = true; running = true; since = 0;
       el('monitorLog').innerHTML = '';
       el('sOld').textContent = '0'; el('sNew').textContent = '0';
-      setStatus('抓取中...');
+      setStatus('补全中...');
       window.monitorShow();
       poll();
     }).catch(function () {
@@ -1188,9 +1188,9 @@ new Vue({
     }
     var txt;
     if (lastTs) {
-      txt = '距离上次抓取已过去 <b>' + fmtDiff(Date.now() - lastTs) + '</b>，数据可能不明显，确定要抓取吗？';
+      txt = '距离上次抓取已过去 <b>' + fmtDiff(Date.now() - lastTs) + '</b>，数据可能不明显，确定要开始一键补全吗？';
     } else {
-      txt = '尚未有抓取记录，确定开始第一次抓取吗？';
+      txt = '尚未有抓取记录，确定开始第一次补全吗？';
     }
     el('confirmText').innerHTML = txt;
     el('confirmMask').classList.add('show');
@@ -1213,7 +1213,7 @@ new Vue({
   function renderHistory(list) {
     var box = el('historyBody');
     if (!list || !list.length) {
-      box.innerHTML = '<div class="history-empty">还没有抓取记录<br>点击「一键抓取」跑完一次后，汇总报告会自动记录到这里</div>';
+      box.innerHTML = '<div class="history-empty">还没有抓取记录<br>点击「一键补全」跑完一次后，汇总报告会自动记录到这里</div>';
       return;
     }
     var html = '';
@@ -1222,7 +1222,7 @@ new Vue({
       var fails = (h.fails || []).map(function (n) { return '<span class="hn err">' + esc(n) + '</span>'; }).join('');
       var failLen = (h.fails || []).length;
       html += '<div class="hitem">' +
-        '<div class="htime">' + esc(h.time) + ' 一次一键抓取</div>' +
+        '<div class="htime">' + esc(h.time) + ' 一次一键补全</div>' +
         '<div class="hrow">老博主新增万赞 <b>' + (h.old_new_count || 0) + '</b> 条</div>' +
         '<div class="hrow">新影视博主 <b>' + (h.new_bloggers || []).length + '</b> 位：' + (names || '<span style="color:#9ca3af">无</span>') + '</div>' +
         '<div class="hrow' + (failLen ? ' err' : '') + '">抓取失败博主 <b>' + failLen + '</b> 位（下次优先重跑）：' + (fails || '<span style="color:#9ca3af">无</span>') + '</div>' +
