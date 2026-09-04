@@ -1218,6 +1218,14 @@ new Vue({
     }
     var html = '';
     list.slice().reverse().forEach(function (h) {
+      // 跳过类判断（每日定时补全：未满3天等）
+      if (h && h.action === 'skip') {
+        html += '<div class="hitem">' +
+          '<div class="htime">' + esc(h.time) + ' 定时判断</div>' +
+          '<div class="hrow" style="color:#f59e0b">跳过：' + esc(h.note || '未触发采集') + '</div>' +
+          '</div>';
+        return;
+      }
       var names = (h.new_bloggers || []).map(function (n) { return '<span class="hn">' + esc(n) + '</span>'; }).join('');
       var fails = (h.fails || []).map(function (n) { return '<span class="hn err">' + esc(n) + '</span>'; }).join('');
       var failLen = (h.fails || []).length;
