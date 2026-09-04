@@ -924,6 +924,11 @@ new Vue({
       this.editingName = null;
       if (this.activeMenu === 'search') { this.searchRan = false; this.$nextTick(() => { this.searchRan = true; }); }
       // 一键同步：保存后自动推送本地服务（服务端改源数据并 git push 到 GitHub）
+      const isLocal = location.protocol === 'file:' || location.hostname === '127.0.0.1' || location.hostname === 'localhost';
+      if (!isLocal) {
+        this.toast('已保存到本机（在线预览页无法推送，请用本地版网页操作后自动同步）', 'err');
+        return;
+      }
       try {
         fetch('http://127.0.0.1:8899/api/save_movie_name', {
           method: 'POST',
@@ -936,7 +941,7 @@ new Vue({
             this.toast('已保存本机，但未同步线上：' + ((d && d.err) || '服务异常'), 'err');
           }
         }).catch(() => {
-          this.toast('已保存到本机（本地同步服务未启动，未推送线上）', 'err');
+          this.toast('已保存到本机（本地同步服务未启动，请先双击启动监控服务.bat）', 'err');
         });
       } catch (e) {}
     },
