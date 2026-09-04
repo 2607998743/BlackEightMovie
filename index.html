@@ -923,27 +923,79 @@ new Vue({
       apply(BLOGGER_DATA); apply(TK_DATA);
       this.editingName = null;
       if (this.activeMenu === 'search') { this.searchRan = false; this.$nextTick(() => { this.searchRan = true; }); }
-      // 一键同步：保存后自动推送本地服务（服务端改源数据并 git push 到 GitHub）
       const isLocal = location.protocol === 'file:' || location.hostname === '127.0.0.1' || location.hostname === 'localhost';
-      if (!isLocal) {
-        this.toast('已保存到本机（在线预览页无法推送，请用本地版网页操作后自动同步）', 'err');
-        return;
+      if (isLocal) {
+        this.saveViaLocal(video, name);
+      } else if (location.hostname === '2607998743.github.io') {
+        this.saveViaGitHub(video, name);
+      } else {
+        this.saveViaCloudflare(video, name);
       }
+    },
+    saveViaLocal(video, name) {
+      const endpoint = 'http://127.0.0.1:8899/api/save_movie_name';
       try {
-        fetch('http://127.0.0.1:8899/api/save_movie_name', {
+        fetch(endpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ url: video.url, movie_name: name })
         }).then(r => r.json()).then(d => {
           if (d && d.ok) {
-            this.toast('已保存并同步到 GitHub 线上' + (d.changed ? '' : '（内容一致）'), 'ok');
+            this.toast('已保存并同步线上' + (d.changed ? '' : '（内容一致）'), 'ok');
           } else {
             this.toast('已保存本机，但未同步线上：' + ((d && d.err) || '服务异常'), 'err');
           }
         }).catch(() => {
-          this.toast('已保存到本机（本地同步服务未启动，请先双击启动监控服务.bat）', 'err');
+          this.toast('已保存到本机（同步服务未启动，请先双击启动监控服务.bat 或检查网络）', 'err');
         });
       } catch (e) {}
+    },
+    saveViaCloudflare(video, name) {
+      try {
+        fetch('/api/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: video.url, movie_name: name })
+        }).then(r => r.json()).then(d => {
+          if (d && d.ok) {
+            this.toast('已保存并同步线上' + (d.changed ? '' : '（内容一致）'), 'ok');
+          } else {
+            this.toast('已保存本机，但未同步线上：' + ((d && d.err) || '服务异常'), 'err');
+          }
+        }).catch(() => {
+          this.toast('已保存到本机（线上同步失败，请检查网络）', 'err');
+        });
+      } catch (e) {}
+    },
+    saveViaGitHub(video, name) {
+      let token = (localStorage.getItem('github_token') || '').trim();
+      if (!token) {
+        token = (window.prompt('请输入 GitHub Token（github_pat_ 开头，只存于本浏览器，用于同步修改到仓库）：') || '').trim();
+        if (!token) { this.toast('已取消同步', 'err'); return; }
+        localStorage.setItem('github_token', token);
+      }
+      let ov = {};
+      try { ov = JSON.parse(localStorage.getItem('movie_name_overrides') || '{}'); } catch (e) {}
+      ov[video.url] = name;
+      const content = btoa(unescape(encodeURIComponent(JSON.stringify(ov, null, 2))));
+      const api = 'https://api.github.com/repos/2607998743/BlackEightMovie/contents/movie_name_overrides.json';
+      const hdr = { 'Authorization': 'token ' + token, 'Accept': 'application/vnd.github+json' };
+      fetch(api, { headers: hdr }).then(r => r.json()).then(d => {
+        const sha = d && d.sha ? d.sha : null;
+        return fetch(api, {
+          method: 'PUT',
+          headers: Object.assign({ 'Content-Type': 'application/json' }, hdr),
+          body: JSON.stringify({ message: '更新影片名 overrides', content: content, sha: sha })
+        });
+      }).then(r => r.json()).then(d => {
+        if (d && d.content) {
+          this.toast('已保存并同步线上（GitHub）', 'ok');
+        } else {
+          this.toast('同步失败：' + ((d && d.message) || '未知错误'), 'err');
+        }
+      }).catch(e => {
+        this.toast('同步失败：' + (e && e.message ? e.message : '网络错误'), 'err');
+      });
     },
     toast(msg, type) {
       let el = document.getElementById('sync-toast');
@@ -969,6 +1021,21 @@ new Vue({
       if (this.pieChart) this.pieChart.resize();
       if (this.countryPieChart) this.countryPieChart.resize();
     });
+    // 在线模式：拉取云端 overrides（GitHub Pages 走仓库文件，Cloudflare 走 KV API）
+    const isLocal = location.protocol === 'file:' || location.hostname === '127.0.0.1' || location.hostname === 'localhost';
+    if (!isLocal) {
+      const applyAfter = (ov) => {
+        try { localStorage.setItem('movie_name_overrides', JSON.stringify(ov || {})); } catch (e) {}
+        this.applyNameOverrides();
+      };
+      if (location.hostname === '2607998743.github.io') {
+        fetch('movie_name_overrides.json').then(r => { if (!r.ok) throw new Error('nf'); return r.json(); })
+          .then(ov => applyAfter(ov || {})).catch(() => {});
+      } else {
+        fetch('/api/overrides').then(r => r.json()).then(d => applyAfter((d && d.overrides) || {}))
+          .catch(() => {});
+      }
+    }
   }
 });
 </script>

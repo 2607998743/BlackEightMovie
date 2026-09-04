@@ -1,0 +1,7 @@
+name = "black-eight-movie"
+compatibility_date = "2026-09-04"
+pages_build_output_dir = "."
+
+[[kv_namespaces]]
+binding = "BLACK_MOVIE_OVERRIDES"
+id = "22e9fffdff54436198b88b8f0b01ff87"
