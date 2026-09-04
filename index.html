@@ -728,7 +728,8 @@ new Vue({
     selectBlogger(b) {
       this.currentBlogger = b;
       this.activeMenu = (b.platform === 'tk') ? 'tiktok' : 'douyin';
-      this.resetFilter();
+      this.filterType = '';
+      this.filterCountry = '美国';
       this.$nextTick(() => {
         this.renderPie();
       });
@@ -955,7 +956,6 @@ new Vue({
     this.applyNameOverrides();
     if (BLOGGER_DATA.length > 0) {
       this.selectBlogger(BLOGGER_DATA[0]);
-      this.filterCountry = '美国';
     }
     window.addEventListener('resize', () => {
       if (this.pieChart) this.pieChart.resize();
