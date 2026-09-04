@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>黑八影视检索</title>
+<script src="blogger_data.js?v=5"></script>
+<script src="tk_data.js?v=7"></script>
+<script src="libs/vue.js?v=5"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro SC", "PingFang SC", "Helvetica Neue", "Microsoft YaHei", sans-serif;
+    background: #f2f4f8; color: #1a1a2e; -webkit-font-smoothing: antialiased;
+  }
+  #app { max-width: 640px; margin: 0 auto; min-height: 100%; display: flex; flex-direction: column; }
+
+  /* 顶部 */
+  .app-header {
+    background: #fff; padding: calc(18px + env(safe-area-inset-top)) 16px 14px;
+    border-bottom: 1px solid #eef0f4; display: flex; align-items: center; gap: 12px;
+    position: sticky; top: 0; z-index: 10;
+  }
+  .logo {
+    width: 40px; height: 40px; border-radius: 12px; flex-shrink: 0;
+    background: linear-gradient(135deg, #4f7cff 0%, #7b5cff 100%);
+    color: #fff; font-size: 19px; font-weight: 800; display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 12px rgba(79, 124, 255, 0.3);
+  }
+  .header-title { font-size: 17px; font-weight: 700; color: #1a1a2e; }
+  .header-sub { font-size: 12px; color: #9ca3af; margin-top: 2px; }
+
+  main { flex: 1; padding: 14px 14px calc(20px + env(safe-area-inset-bottom)); }
+
+  /* 搜索卡片 */
+  .search-card { background: #fff; border-radius: 16px; padding: 16px; box-shadow: 0 2px 10px rgba(20, 30, 60, 0.05); }
+  .search-input-wrap { display: flex; gap: 10px; }
+  .search-input-wrap input {
+    flex: 1; min-width: 0; height: 46px; padding: 0 16px; border: 1.5px solid #e3e8f0;
+    border-radius: 12px; font-size: 15px; color: #1a1a2e; background: #f8fafc; outline: none; transition: all .2s;
+  }
+  .search-input-wrap input:focus { border-color: #4f7cff; background: #fff; box-shadow: 0 0 0 3px rgba(79, 124, 255, 0.12); }
+  .search-input-wrap input::placeholder { color: #b0b7c3; }
+  .search-btn {
+    flex-shrink: 0; width: 76px; height: 46px; border: none; border-radius: 12px;
+    background: linear-gradient(135deg, #4f7cff 0%, #6b8ffe 100%);
+    color: #fff; font-size: 15px; font-weight: 600; cursor: pointer;
+    box-shadow: 0 4px 12px rgba(79, 124, 255, 0.3); transition: all .15s;
+  }
+  .search-btn:active { transform: scale(0.96); box-shadow: 0 2px 6px rgba(79, 124, 255, 0.3); }
+  .search-hint { font-size: 12px; color: #9ca3af; margin-top: 10px; line-height: 1.6; }
+
+  /* 已识别条件 */
+  .recognized {
+    margin-top: 12px; padding: 10px 12px; background: #f0f5ff; border-radius: 12px;
+    font-size: 13px; color: #2563eb; display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
+  }
+  .recognized .lab { color: #6b7280; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 4px; background: #fff; border: 1px solid #d5e0ff;
+    border-radius: 20px; padding: 3px 10px; font-size: 12px; color: #3b5bdb; font-weight: 500;
+  }
+  .chip i { font-style: normal; color: #9ca3af; padding: 2px; font-size: 14px; line-height: 1; cursor: pointer; }
+
+  /* 结果信息 */
+  .result-info { margin: 14px 4px 10px; font-size: 13px; color: #4f7cff; font-weight: 600; }
+
+  /* 空状态 */
+  .empty { padding: 60px 24px; text-align: center; }
+  .empty-icon { font-size: 44px; margin-bottom: 14px; }
+  .empty p { color: #9ca3af; font-size: 14px; }
+  .examples { display: flex; flex-direction: column; gap: 8px; margin-top: 22px; }
+  .example {
+    background: #fff; border-radius: 12px; padding: 12px 14px; font-size: 13px; color: #4b5563;
+    text-align: left; cursor: pointer; box-shadow: 0 1px 4px rgba(20,30,60,.04); border: 1px solid #f0f2f5;
+    transition: all .15s;
+  }
+  .example:active { background: #f0f5ff; border-color: #c7d2fe; }
+  .example .arrow { float: right; color: #c0c4cc; }
+
+  /* 结果列表 */
+  .result-list { display: flex; flex-direction: column; gap: 10px; }
+  .video-card {
+    display: flex; gap: 12px; background: #fff; border-radius: 14px; padding: 12px;
+    text-decoration: none; color: inherit; box-shadow: 0 1px 4px rgba(20,30,60,.04); border: 1px solid #f0f2f5;
+    transition: all .15s;
+  }
+  .video-card:active { transform: scale(0.98); background: #fafbff; }
+  .cover {
+    width: 84px; height: 112px; border-radius: 10px; object-fit: cover; flex-shrink: 0;
+    background: #eef0f4;
+  }
+  .video-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+  .v-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .v-name {
+    font-size: 15px; font-weight: 700; color: #1a1a2e; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+  }
+  .v-name.unknown { color: #9ca3af; font-weight: 500; }
+  .v-like { font-size: 13px; font-weight: 700; color: #ef4444; flex-shrink: 0; }
+  .v-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+  .tag {
+    font-size: 11px; padding: 2px 8px; border-radius: 6px; background: #f3f4f6; color: #6b7280; font-weight: 500;
+  }
+  .tag.tk { background: #fde8ec; color: #e11d48; }
+  .tag.dy { background: #e8f0fe; color: #2563eb; }
+  .tag.hot { background: #fde8ec; color: #e11d48; }
+  .tag.warn { background: #fef3c7; color: #b45309; }
+  .v-title {
+    font-size: 13px; color: #4b5563; line-height: 1.5;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .v-meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: auto; }
+  .blogger { font-size: 12px; color: #9ca3af; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .time { font-size: 11px; color: #c0c4cc; flex-shrink: 0; }
+
+  .more-btn {
+    margin: 16px 0 8px; width: 100%; height: 44px; border: none; border-radius: 12px;
+    background: #fff; color: #4f7cff; font-size: 14px; font-weight: 600; cursor: pointer;
+    box-shadow: 0 1px 4px rgba(20,30,60,.04); border: 1px solid #e3e8f0;
+  }
+  .more-btn:active { background: #f0f5ff; }
+  .foot { text-align: center; color: #c0c4cc; font-size: 11px; padding: 18px 0 4px; }
+</style>
+</head>
+<body>
+<div id="app">
+  <header class="app-header">
+    <div class="logo">黑</div>
+    <div>
+      <div class="header-title">黑八影视检索</div>
+      <div class="header-sub">一句话找到想看的影视解说</div>
+    </div>
+  </header>
+
+  <main>
+    <div class="search-card">
+      <div class="search-input-wrap">
+        <input v-model="nlText" placeholder="输入一句话，例如：2025年9月的悬疑片" @keyup.enter="parseAndSearch">
+        <button class="search-btn" @click="parseAndSearch">检索</button>
+      </div>
+      <div class="search-hint">自动识别：平台(抖音/TIKTOK) · 年月 · 国家 · 类型 · 爆款/热门 · 影片名 · 博主名 · 粉丝数</div>
+      <div v-if="chips.length" class="recognized">
+        <span class="lab">已识别</span>
+        <span class="chip" v-for="chip in chips" :key="chip.key">
+          {{ chip.label }}<i @click="removeChip(chip)">×</i>
+        </span>
+      </div>
+    </div>
+
+    <div class="result-info" v-if="searchRan">共 {{ totalCount }} 条，按点赞降序</div>
+
+    <div v-if="!searchRan" class="empty">
+      <div class="empty-icon">🎬</div>
+      <p>输入一句话，找到你想要的影视解说</p>
+      <div class="examples">
+        <div class="example" v-for="e in examples" :key="e" @click="fillExample(e)">
+          {{ e }} <span class="arrow">›</span>
+        </div>
+      </div>
+    </div>
+
+    <div v-else-if="searchResults.length === 0" class="empty">
+      <div class="empty-icon">🔍</div>
+      <p>没有找到匹配结果，换个说法试试</p>
+    </div>
+
+    <div v-else class="result-list">
+      <a class="video-card" v-for="(v, idx) in visibleResults" :key="idx" :href="v.url" target="_blank" rel="noopener">
+        <img class="cover" :src="v.cover" loading="lazy" @error="coverErr($event)" alt="">
+        <div class="video-info">
+          <div class="v-top">
+            <span class="v-name" :class="{unknown: !v.movie_name || v.movie_name === '未知'}">{{ v.movie_name || '未知' }}</span>
+            <span class="v-like">❤ {{ fmtLikes(v.likes) }}</span>
+          </div>
+          <div class="v-tags">
+            <span class="tag" :class="v.platform === 'tk' ? 'tk' : 'dy'">{{ v.platform === 'tk' ? 'TIKTOK' : '抖音' }}</span>
+            <span class="tag" v-if="v.type">{{ v.type }}</span>
+            <span class="tag" v-if="v.country && v.country !== '未知'">{{ v.country }}</span>
+            <span class="tag hot" v-if="v.likes > 50000">爆款</span>
+            <span class="tag warn" v-else-if="v.likes > 10000">热门</span>
+          </div>
+          <div class="v-title">{{ v.title }}</div>
+          <div class="v-meta">
+            <span class="blogger">@{{ v.blogger }}<template v-if="v.fans">&nbsp;·&nbsp;{{ v.fans }}</template></span>
+            <span class="time" v-if="v.publish_time">{{ v.publish_time }}</span>
+          </div>
+        </div>
+      </a>
+      <button v-if="visibleCount < searchResults.length" class="more-btn" @click="visibleCount += 50">加载更多（还有 {{ searchResults.length - visibleCount }} 条）</button>
+    </div>
+
+    <div class="foot">黑八影视监控 · 数据每日更新</div>
+  </main>
+</div>
+
+<script>
+new Vue({
+  el: '#app',
+  data: function () {
+    return {
+      nlText: '',
+      nlRecognized: '',
+      chips: [],
+      searchMonth: '', searchCountry: '', searchType: '', searchName: '',
+      searchBlogger: '', searchMinLikes: 0, searchPlatform: '', fanMin: 0, fanMax: 0,
+      searchRan: false,
+      visibleCount: 50,
+      examples: [
+        '2025年9月的悬疑片哪些爆了',
+        '美国动作片爆款',
+        '抖音的恐怖片',
+        'TK博主 科幻片',
+        '《蜘蛛侠》都有谁剪过',
+        '粉丝 100万以上的电影博主'
+      ]
+    };
+  },
+  computed: {
+    totalCount: function () { return this.searchResults.length; },
+    searchResults: function () {
+      if (!this.searchRan) return [];
+      var min = this.searchMinLikes || 0;
+      var res = [];
+      var sources = [];
+      if (!this.searchPlatform || this.searchPlatform === 'douyin') sources.push(BLOGGER_DATA);
+      if (!this.searchPlatform || this.searchPlatform === 'tk') sources.push(TK_DATA);
+      sources.forEach(function (src) {
+        src.forEach(function (b) {
+          (b.videos || []).forEach(function (v) {
+            if (this.searchMonth && !(v.publish_time || '').startsWith(this.searchMonth)) return;
+            if (this.searchCountry && (v.country || '未知') !== this.searchCountry) return;
+            if (this.searchType && (v.type || '未知') !== this.searchType) return;
+            if (this.searchName && !(v.movie_name || '').includes(this.searchName)) return;
+            if (min && (v.likes || 0) < min) return;
+            if (this.searchBlogger && !b.name.includes(this.searchBlogger)) return;
+            if (this.fanMin > 0 && (b.fans || 0) < this.fanMin) return;
+            if (this.fanMax > 0 && (b.fans || 0) > this.fanMax) return;
+            res.push(Object.assign({}, v, { blogger: b.name, fans: b.fans_str || '', platform: b.platform || 'douyin' }));
+          }, this);
+        }, this);
+      }, this);
+      return res.sort(function (a, b) { return (b.likes || 0) - (a.likes || 0); });
+    },
+    visibleResults: function () { return this.searchResults.slice(0, this.visibleCount); }
+  },
+  methods: {
+    parseAndSearch: function () {
+      var text = (this.nlText || '').trim();
+      this.resetSearch();
+      if (!text) return;
+      var q = {};
+      var rest = text;
+      var m = text.match(/(\d{4})\s*[年.\-\/]\s*(\d{1,2})\s*月?/);
+      if (m) { q.month = m[1] + '-' + String(Number(m[2])).padStart(2, '0'); rest = rest.replace(m[0], ' '); }
+      else { m = text.match(/(\d{4})\s*年/); if (m) { q.year = m[1]; rest = rest.replace(m[0], ' '); } }
+      if (/(抖音|douyin)/i.test(text)) { q.platform = 'douyin'; rest = rest.replace(/抖音博主|抖音|douyin/gi, ' '); }
+      else if (/(tiktok|tk)/i.test(text)) { q.platform = 'tk'; rest = rest.replace(/TikTok博主|TikTok|tiktok|TK博主|tk/gi, ' '); }
+      var countries = ['美国','英国','法国','日本','韩国','印度','泰国','俄罗斯','德国','意大利','西班牙','加拿大','澳大利亚','墨西哥','土耳其','中国','香港','台湾','挪威','瑞典','丹麦','荷兰','巴西','阿根廷','新西兰','奥地利','波兰','比利时','伊朗','以色列','菲律宾','越南','印尼','芬兰','爱尔兰','葡萄牙','瑞士'];
+      for (var ci = 0; ci < countries.length; ci++) if (text.indexOf(countries[ci]) >= 0) { q.country = countries[ci]; rest = rest.replace(countries[ci], ' '); break; }
+      var types = ['悬疑','科幻','动作','恐怖','剧情','喜剧','爱情','战争','犯罪','奇幻','惊悚','灾难','纪录片','动画','谍战','推理','音乐','冒险','运动','历史','家庭','西部','歌舞','传记','警匪'];
+      for (var ti = 0; ti < types.length; ti++) if (text.indexOf(types[ti]) >= 0) { q.type = types[ti]; rest = rest.replace(types[ti], ' '); break; }
+      var cnSmall = function (s) {
+        var digits = {'零':0,'一':1,'二':2,'两':2,'三':3,'四':4,'五':5,'六':6,'七':7,'八':8,'九':9};
+        var units = {'十':10,'百':100,'千':1000};
+        var result = 0, num = 0;
+        for (var i = 0; i < s.length; i++) {
+          var ch = s[i];
+          if (digits[ch] !== undefined) num = digits[ch];
+          else if (units[ch]) { result += (num || 1) * units[ch]; num = 0; }
+        }
+        return result + num;
+      };
+      var parseFan = function (s) {
+        if (s === '') return 10000;
+        if (/^\d+(?:\.\d+)?$/.test(s)) return Math.round(parseFloat(s) * 10000);
+        return cnSmall(s) * 10000;
+      };
+      var fm = rest.match(/([零一二三四五六七八九十百千两\d]*)\s*万\s*粉\s*(以下|以内|之内|内)/);
+      if (fm) { q.fanMax = parseFan(fm[1]); rest = rest.replace(fm[0], ' '); }
+      else {
+        fm = rest.match(/([零一二三四五六七八九十百千两\d]*)\s*万\s*粉\s*(以上|起|之上)/);
+        if (fm) { q.fanMin = parseFan(fm[1]); rest = rest.replace(fm[0], ' '); }
+      }
+      var fs = rest.match(/粉丝\s*(低于|少于|不到|不超过|以内)\s*([零一二三四五六七八九十百千两\d]+)\s*万/);
+      if (fs) { q.fanMax = parseFan(fs[2]); rest = rest.replace(fs[0], ' '); }
+      else {
+        fs = rest.match(/粉丝\s*(高于|超过|达到|以上)\s*([零一二三四五六七八九十百千两\d]+)\s*万/);
+        if (fs) { q.fanMin = parseFan(fs[2]); rest = rest.replace(fs[0], ' '); }
+      }
+      if (text.indexOf('爆') >= 0) {
+        var mm = text.match(/(\d+(?:\.\d+)?)\s*万/);
+        q.minLikes = mm ? Math.round(parseFloat(mm[1]) * 10000) : 100000;
+      } else if (text.indexOf('热') >= 0) {
+        q.minLikes = 50000;
+      }
+      var nm = text.match(/《(.+?)》/);
+      if (nm) q.name = nm[1];
+      var bloggerSrc = (q.platform === 'tk') ? TK_DATA : BLOGGER_DATA;
+      for (var bi = 0; bi < bloggerSrc.length; bi++) {
+        var b = bloggerSrc[bi];
+        if (text.indexOf(b.name) >= 0) { q.blogger = b.name; rest = rest.replace(b.name, ' '); break; }
+      }
+      if (!q.name) {
+        var leftover = rest.replace(/哪些|都有|谁|的|了|片|剪|过|解说|视频|下|个|月|年|爆款|爆了|热门|有|没|查|找|推荐|看看|火/g, ' ').replace(/[，。？?！!、\s]+/g, ' ').trim();
+        if (leftover && leftover.length <= 12) q.name = leftover;
+      }
+      this.searchMonth = q.month || (q.year || '');
+      this.searchCountry = q.country || '';
+      this.searchType = q.type || '';
+      this.searchName = q.name || '';
+      this.searchBlogger = q.blogger || '';
+      this.searchMinLikes = q.minLikes || 0;
+      this.searchPlatform = q.platform || '';
+      this.fanMin = q.fanMin || 0;
+      this.fanMax = q.fanMax || 0;
+      this.searchRan = true;
+      this.visibleCount = 50;
+      var chips = [];
+      if (q.platform) chips.push({ key: 'platform', label: (q.platform === 'tk' ? 'TIKTOK' : '抖音') });
+      if (q.month) chips.push({ key: 'month', label: q.month });
+      else if (q.year) chips.push({ key: 'month', label: q.year });
+      if (q.country) chips.push({ key: 'country', label: q.country });
+      if (q.type) chips.push({ key: 'type', label: q.type });
+      if (q.minLikes) chips.push({ key: 'minLikes', label: '点赞≥' + (q.minLikes / 10000) + '万' });
+      if (q.fanMax) chips.push({ key: 'fanMax', label: '粉丝≤' + (q.fanMax / 10000) + '万' });
+      if (q.fanMin) chips.push({ key: 'fanMin', label: '粉丝≥' + (q.fanMin / 10000) + '万' });
+      if (q.name) chips.push({ key: 'name', label: '影片「' + q.name + '」' });
+      if (q.blogger) chips.push({ key: 'blogger', label: '博主 ' + q.blogger });
+      this.chips = chips;
+    },
+    resetSearch: function () {
+      this.searchMonth = ''; this.searchCountry = ''; this.searchType = '';
+      this.searchName = ''; this.searchBlogger = ''; this.searchMinLikes = 0;
+      this.searchPlatform = ''; this.fanMin = 0; this.fanMax = 0;
+      this.searchRan = false; this.chips = [];
+    },
+    removeChip: function (chip) {
+      var map = {
+        platform: 'searchPlatform', month: 'searchMonth', country: 'searchCountry',
+        type: 'searchType', name: 'searchName', blogger: 'searchBlogger',
+        minLikes: 'searchMinLikes', fanMin: 'fanMin', fanMax: 'fanMax'
+      };
+      this[map[chip.key]] = chip.key === 'minLikes' ? 0 : (chip.key === 'fanMin' || chip.key === 'fanMax' ? 0 : '');
+      this.chips = this.chips.filter(function (c) { return c.key !== chip.key; });
+    },
+    fillExample: function (e) { this.nlText = e; this.parseAndSearch(); },
+    fmtLikes: function (n) {
+      n = Number(n) || 0;
+      if (n >= 100000000) return (n / 100000000).toFixed(1) + '亿';
+      if (n >= 10000) return (n / 10000).toFixed(1) + '万';
+      return String(n);
+    },
+    coverErr: function (e) { e.target.style.display = 'none'; },
+    applyNameOverrides: function () {
+      var ov = {};
+      try { ov = JSON.parse(localStorage.getItem('movie_name_overrides') || '{}'); } catch (err) {}
+      var keys = Object.keys(ov);
+      if (!keys.length) return;
+      var apply = function (src) {
+        src.forEach(function (b) { (b.videos || []).forEach(function (v) { if (ov[v.url]) v.movie_name = ov[v.url]; }); });
+      };
+      apply(BLOGGER_DATA); apply(TK_DATA);
+    }
+  },
+  mounted: function () {
+    this.applyNameOverrides();
+    // 在线模式：拉取仓库 overrides 文件并应用
+    if (location.protocol !== 'file:' && location.hostname !== '127.0.0.1' && location.hostname !== 'localhost') {
+      var self = this;
+      fetch('movie_name_overrides.json').then(function (r) { return r.json(); }).then(function (ov) {
+        try { localStorage.setItem('movie_name_overrides', JSON.stringify(ov)); } catch (e) {}
+        self.applyNameOverrides();
+      }).catch(function () {});
+    }
+  }
+});
+</script>
+</body>
+</html>
