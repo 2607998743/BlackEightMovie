@@ -246,31 +246,15 @@
 .filter-btn .icon-svg { color: #4b5563; }
 .filter-btn.active .icon-svg { color: #4f7cff; }
 
-  /* ===== 一键补全 ===== */
-  .sidebar-footer { padding: 14px 16px; border-top: 1px solid #eef0f4; }
-  .monitor-btn { width: 100%; height: 40px; border-radius: 10px; font-weight: 600; letter-spacing: 1px; }
-  .monitor-hint { font-size: 11px; color: #9ca3af; text-align: center; margin-top: 8px; line-height: 1.6; }
   .monitor-mask { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 3000; display: none; }
   .monitor-mask.show { display: block; }
   .monitor-panel { position: fixed; top: 0; right: 0; width: 430px; height: 100vh; background: #fff; z-index: 3001; box-shadow: -8px 0 24px rgba(0,0,0,0.12); display: flex; flex-direction: column; transform: translateX(100%); transition: transform 0.25s; }
   .monitor-panel.show { transform: translateX(0); }
   .monitor-head { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid #eef0f4; }
   .monitor-title { font-size: 15px; font-weight: 700; color: #1a1a2e; display: flex; align-items: center; gap: 8px; }
-  .monitor-status { font-size: 11px; padding: 2px 10px; border-radius: 20px; background: #fff7e6; color: #d48806; white-space: nowrap; }
-  .monitor-status.done { background: #f0f9eb; color: #52c41a; }
-  .monitor-status.err { background: #fef0f0; color: #f56c6c; }
   .monitor-close { cursor: pointer; color: #9ca3af; font-size: 20px; line-height: 1; padding: 0 2px; }
   .monitor-close:hover { color: #4b5563; }
   .monitor-body { flex: 1; overflow-y: auto; padding: 12px 16px; background: #fafbfc; }
-  .monitor-log { font-size: 12.5px; line-height: 1.7; color: #4b5563; }
-  .monitor-log .row { padding: 4px 6px; border-bottom: 1px dashed #eef0f4; background: #fff; margin-bottom: 4px; border-radius: 6px; }
-  .monitor-log .row .t { color: #9ca3af; margin-right: 8px; font-size: 11px; }
-  .monitor-log .row.hl { color: #4f7cff; font-weight: 600; }
-  .monitor-log .row.hl-star { color: #e6a23c; font-weight: 600; }
-  .monitor-log .row.err { color: #f56c6c; }
-  .monitor-summary { padding: 12px 16px; border-top: 1px solid #eef0f4; background: #fff; }
-  .summary-item { font-size: 12.5px; color: #4b5563; margin-bottom: 4px; }
-  .summary-item b { color: #4f7cff; font-size: 14px; }
 
   /* 抓取历史面板 */
   .history-body { background: #f5f7fa; }
@@ -343,13 +327,6 @@
             <span>数据检索</span>
           </el-menu-item>
         </el-menu>
-      </div>
-      <div class="sidebar-footer">
-        <el-button type="primary" class="monitor-btn" @click="startMonitor" :loading="monitorRunning" :disabled="monitorRunning">
-          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
-          {{ monitorRunning ? '补全中...' : '抖音一键补全' }}
-        </el-button>
-        <div class="monitor-hint">全量重采所有博主（Playwright 滑到底，不 403）</div>
       </div>
     </el-aside>
 
@@ -638,7 +615,6 @@ new Vue({
       fanMax: 0,
       editingName: null,
       editNameVal: '',
-      monitorRunning: false
     }
   },
   computed: {
@@ -721,9 +697,6 @@ new Vue({
       if (index === 'search') {
         this.currentBlogger = null;
       }
-    },
-    startMonitor() {
-      try { window.monitorStart(); } catch (e) {}
     },
     selectBlogger(b) {
       this.currentBlogger = b;
@@ -988,27 +961,6 @@ new Vue({
 </script>
 
 
-<!-- 一键补全日志面板 -->
-<div class="monitor-mask" id="monitorMask"></div>
-<div class="monitor-panel" id="monitorPanel">
-  <div class="monitor-head">
-    <div class="monitor-title">
-      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#4f7cff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
-      一键补全
-      <span class="monitor-status" id="monitorStatus">未开始</span>
-    </div>
-    <span class="monitor-close" onclick="monitorClose()">&times;</span>
-  </div>
-  <div class="monitor-body">
-    <div class="monitor-log" id="monitorLog"></div>
-  </div>
-  <div class="monitor-summary">
-    <div class="summary-item">老博主新增万赞视频：<b id="sOld">0</b> 条</div>
-    <div class="summary-item">新影视博主：<b id="sNew">0</b> 位</div>
-    <div class="summary-item" style="color:#9ca3af;font-size:11px;margin-top:4px;">新增数据已自动同步到网页数据（影片识别待补充）</div>
-  </div>
-</div>
-
 <!-- 抓取历史报告面板 -->
 <div class="monitor-mask" id="historyMask"></div>
 <div class="monitor-panel" id="historyPanel">
@@ -1021,191 +973,16 @@ new Vue({
   </div>
   <div class="monitor-body history-body" id="historyBody"></div>
 </div>
-<!-- 抓取确认弹窗 -->
-<div class="confirm-mask" id="confirmMask">
-  <div class="confirm-box">
-    <div class="confirm-title">确认抓取</div>
-    <div class="confirm-text" id="confirmText"></div>
-    <div class="confirm-btns">
-      <button class="cbtn cbtn-cancel" onclick="window.confirmCancel()">取消</button>
-      <button class="cbtn cbtn-ok" onclick="window.confirmOk()">确定抓取</button>
-    </div>
-  </div>
-</div>
-
 
 <script>
 (function () {
-  var API = 'http://127.0.0.1:8899';
-  var since = 0, timer = null, running = false, started = false;
-
   function el(id) { return document.getElementById(id); }
   function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
-
-  // 页面加载种子：本地无记录且服务在线时，用服务端最近抓取时间迁移到 localStorage
-  fetch(API + '/api/history').then(function (r) { return r.json(); }).then(function (d) {
-    var hist = d.history || [];
-    if (!localStorage.getItem('last_monitor_time') && hist.length) {
-      var lt = new Date(String(hist[hist.length - 1].time || '').replace(/-/g, '/')).getTime();
-      if (!isNaN(lt)) localStorage.setItem('last_monitor_time', String(lt));
-    }
-  }).catch(function () {});
-
-  window.monitorShow = function () {
-    el('monitorMask').classList.add('show');
-    el('monitorPanel').classList.add('show');
-  };
-  window.monitorClose = function () {
-    if (timer) { clearInterval(timer); timer = null; }
-    el('monitorMask').classList.remove('show');
-    el('monitorPanel').classList.remove('show');
-  };
-  el('monitorMask').addEventListener('click', window.monitorClose);
-
-  function setStatus(txt, cls) {
-    var s = el('monitorStatus');
-    s.textContent = txt;
-    s.className = 'monitor-status' + (cls ? ' ' + cls : '');
-  }
-
-  function poll() {
-    timer = setInterval(function () {
-      fetch(API + '/api/log?since=' + since).then(function (r) { return r.json(); }).then(function (d) {
-        (d.lines || []).forEach(function (x) {
-          since = x.i + 1;
-          var row = document.createElement('div');
-          var cls = '';
-          if (x.m.indexOf('★') >= 0) cls = 'hl-star';
-          else if (x.m.indexOf('新增') >= 0) cls = 'hl';
-          else if (x.m.indexOf('失败') >= 0 || x.m.indexOf('异常') >= 0) cls = 'err';
-          row.className = 'row ' + cls;
-          row.innerHTML = '<span class="t">' + esc(x.t) + '</span>' + esc(x.m);
-          el('monitorLog').appendChild(row);
-        });
-        var lg = el('monitorLog');
-        lg.scrollTop = lg.scrollHeight;
-      }).catch(function () {});
-      fetch(API + '/api/status').then(function (r) { return r.json(); }).then(function (d) {
-        if (started && !d.running && running) {
-          running = false;
-          clearInterval(timer); timer = null;
-          setStatus('完成', 'done');
-          setMonitorRunning(false);
-          localStorage.setItem('last_monitor_time', String(Date.now()));
-          fetch(API + '/api/result').then(function (r) { return r.json(); }).then(function (res) {
-            var r2 = res.result || {};
-            var sm = r2.summary || {};
-            el('sOld').textContent = sm.old_new_count || 0;
-            el('sNew').textContent = sm.new_blogger_count || 0;
-          }).catch(function () {});
-        } else if (d.running) {
-          setStatus('补全中...');
-        }
-      }).catch(function () {});
-    }, 1500);
-  }
-
-  function fmtDiff(ms) {
-    var min = Math.floor(ms / 60000);
-    if (min < 1) return '不到 1 分钟';
-    if (min < 60) return min + ' 分钟';
-    var h = Math.floor(min / 60), m = min % 60;
-    if (h < 24) return h + ' 小时 ' + m + ' 分钟';
-    var d = Math.floor(h / 24), rh = h % 24;
-    return d + ' 天 ' + rh + ' 小时';
-  }
-  function setMonitorRunning(v) {
-    var app = document.querySelector('#app');
-    if (app && app.__vue__) { try { app.__vue__.monitorRunning = !!v; } catch (e) {} }
-  }
-  function probeReady() {
-    return fetch(API + '/api/status').then(function (r) {
-      if (!r.ok) throw 0;
-      return r.json();
-    }).then(function (d) {
-      return !!(d && d.ok !== false);
-    }).catch(function () { return false; });
-  }
-  function fireCheck() {
-    fetch(API + '/api/fullscan', { method: 'POST' }).then(function (r) { return r.json(); }).then(function (d) {
-      if (!d.ok) { alert(d.err || '启动失败'); return; }
-      setMonitorRunning(true);
-      started = true; running = true; since = 0;
-      el('monitorLog').innerHTML = '';
-      el('sOld').textContent = '0'; el('sNew').textContent = '0';
-      setStatus('补全中...');
-      window.monitorShow();
-      poll();
-    }).catch(function () {
-      setStatus('连接失败', 'err');
-      alert('本地监控服务连接失败\n请手动双击「启动监控服务.bat」后再试');
-    });
-  }
-  function doStart() {
-    // 先探测本地服务是否已在运行
-    probeReady().then(function (ready) {
-      if (ready) { fireCheck(); return; }
-      // 服务未启动 -> 通过 douyinmon:// 协议唤起「启动监控服务.bat」
-      setStatus('启动服务中...');
-      try { window.location.href = 'douyinmon://start'; } catch (e) {}
-      var waited = 0;
-      var t = setInterval(function () {
-        waited += 1000;
-        probeReady().then(function (ok) {
-          if (ok) {
-            clearInterval(t);
-            fireCheck();
-          } else if (waited >= 30000) {
-            clearInterval(t);
-            setStatus('启动失败', 'err');
-            alert('本地服务启动超时，请手动双击「启动监控服务.bat」后再试');
-          } else {
-            setStatus('启动服务中... ' + Math.floor(waited / 1000) + 's');
-          }
-        });
-      }, 1000);
-    });
-  }
-  window.confirmOk = function () {
-    el('confirmMask').classList.remove('show');
-    doStart();
-  };
-  window.confirmCancel = function () {
-    el('confirmMask').classList.remove('show');
-  };
-  window.monitorStart = function () {
-    if (running) return;
-    // 与日历历史面板同源：读 MONITOR_HISTORY（monitor_history_data.js，离线可用）
-    var hist = (typeof MONITOR_HISTORY !== 'undefined') ? MONITOR_HISTORY : [];
-    var lastTs = null;
-    if (hist.length) {
-      var lt = new Date(String(hist[hist.length - 1].time || '').replace(/-/g, '/')).getTime();
-      if (!isNaN(lt)) lastTs = lt;
-    }
-    // localStorage 仅作兜底种子
-    if (lastTs === null) {
-      var ls = localStorage.getItem('last_monitor_time');
-      if (ls) lastTs = parseInt(ls, 10);
-    }
-    var txt;
-    if (lastTs) {
-      txt = '距离上次抓取已过去 <b>' + fmtDiff(Date.now() - lastTs) + '</b>，数据可能不明显，确定要开始一键补全吗？';
-    } else {
-      txt = '尚未有抓取记录，确定开始第一次补全吗？';
-    }
-    el('confirmText').innerHTML = txt;
-    el('confirmMask').classList.add('show');
-  };
   window.historyOpen = function () {
     el('historyMask').classList.add('show');
     el('historyPanel').classList.add('show');
-    // 先渲染本地数据文件（离线也能看）
     var localHist = (typeof MONITOR_HISTORY !== 'undefined') ? MONITOR_HISTORY : [];
     renderHistory(localHist);
-    // 服务在线时用最新历史刷新
-    fetch(API + '/api/history').then(function (r) { return r.json(); }).then(function (d) {
-      if (d.history && d.history.length) renderHistory(d.history);
-    }).catch(function () {});
   };
   window.historyClose = function () {
     el('historyMask').classList.remove('show');
@@ -1214,12 +991,11 @@ new Vue({
   function renderHistory(list) {
     var box = el('historyBody');
     if (!list || !list.length) {
-      box.innerHTML = '<div class="history-empty">还没有抓取记录<br>点击「一键补全」跑完一次后，汇总报告会自动记录到这里</div>';
+      box.innerHTML = '<div class="history-empty">还没有抓取记录<br>跑完一次一键抓取后，汇总报告会自动记录到这里</div>';
       return;
     }
     var html = '';
     list.slice().reverse().forEach(function (h) {
-      // 跳过类判断（每日定时补全：未满3天等）
       if (h && h.action === 'skip') {
         html += '<div class="hitem">' +
           '<div class="htime">' + esc(h.time) + ' 定时判断</div>' +
