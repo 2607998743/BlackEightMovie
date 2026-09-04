@@ -923,6 +923,36 @@ new Vue({
       apply(BLOGGER_DATA); apply(TK_DATA);
       this.editingName = null;
       if (this.activeMenu === 'search') { this.searchRan = false; this.$nextTick(() => { this.searchRan = true; }); }
+      // 一键同步：保存后自动推送本地服务（服务端改源数据并 git push 到 GitHub）
+      try {
+        fetch('http://127.0.0.1:8899/api/save_movie_name', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: video.url, movie_name: name })
+        }).then(r => r.json()).then(d => {
+          if (d && d.ok) {
+            this.toast('已保存并同步到 GitHub 线上' + (d.changed ? '' : '（内容一致）'), 'ok');
+          } else {
+            this.toast('已保存本机，但未同步线上：' + ((d && d.err) || '服务异常'), 'err');
+          }
+        }).catch(() => {
+          this.toast('已保存到本机（本地同步服务未启动，未推送线上）', 'err');
+        });
+      } catch (e) {}
+    },
+    toast(msg, type) {
+      let el = document.getElementById('sync-toast');
+      if (!el) {
+        el = document.createElement('div');
+        el.id = 'sync-toast';
+        el.style.cssText = 'position:fixed;top:16px;right:16px;z-index:99999;padding:10px 16px;border-radius:6px;color:#fff;font-size:13px;line-height:1.5;box-shadow:0 2px 8px rgba(0,0,0,.2);transition:opacity .3s;max-width:340px;';
+        document.body.appendChild(el);
+      }
+      el.textContent = msg;
+      el.style.background = (type === 'ok') ? 'rgba(24,160,88,.95)' : 'rgba(245,108,108,.95)';
+      el.style.opacity = '1';
+      clearTimeout(el._t);
+      el._t = setTimeout(() => { el.style.opacity = '0'; }, 3500);
     }
   },
   mounted() {
