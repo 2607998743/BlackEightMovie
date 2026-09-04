@@ -286,19 +286,88 @@
   .confirm-btns .cbtn-cancel:hover { background: #e5e7eb; }
   .confirm-btns .cbtn-ok { background: linear-gradient(135deg, #4f7cff, #6b8ffe); color: #fff; }
 
+  /* ===== 登录界面 ===== */
+  .login-mask {
+    position: fixed; inset: 0; z-index: 9999;
+    background: linear-gradient(135deg, #eaf6f1 0%, #d9efe6 40%, #cdece0 100%);
+    background-image:
+      radial-gradient(circle at 15% 20%, rgba(255,255,255,.65) 0, transparent 28%),
+      radial-gradient(circle at 85% 75%, rgba(255,255,255,.5) 0, transparent 32%),
+      linear-gradient(135deg, #eaf6f1 0%, #d9efe6 40%, #cdece0 100%);
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+  }
+  .login-mask::before {
+    content: ''; position: absolute; inset: 0;
+    background-image:
+      linear-gradient(30deg, rgba(255,255,255,.18) 12%, transparent 12.5%, transparent 87%, rgba(255,255,255,.18) 87.5%),
+      linear-gradient(150deg, rgba(255,255,255,.18) 12%, transparent 12.5%, transparent 87%, rgba(255,255,255,.18) 87.5%);
+    background-size: 56px 97px; background-position: 0 0;
+  }
+  .login-card {
+    position: relative; width: 400px; max-width: 88vw;
+    background: #fff; border-radius: 20px; padding: 44px 40px 36px;
+    box-shadow: 0 24px 60px rgba(15, 110, 90, 0.18), 0 4px 14px rgba(15, 110, 90, 0.08);
+    z-index: 2;
+  }
+  .login-title { font-size: 30px; font-weight: 800; color: #134e4a; }
+  .login-sub { font-size: 13px; color: #6b8f8a; margin: 6px 0 26px; }
+  .login-field {
+    position: relative; margin-bottom: 16px;
+    display: flex; align-items: center;
+  }
+  .login-field .field-icon { position: absolute; left: 14px; width: 18px; height: 18px; color: #94a3b8; pointer-events: none; }
+  .login-field input {
+    width: 100%; height: 46px; padding: 0 44px; border: 1.5px solid #e2e8f0; border-radius: 12px;
+    font-size: 15px; color: #1a2e2b; background: #f8fbfa; outline: none; transition: all .2s;
+  }
+  .login-field input:focus { border-color: #10b981; background: #fff; box-shadow: 0 0 0 3px rgba(16,185,129,.12); }
+  .login-field input::placeholder { color: #a8bdb8; }
+  .login-eye { position: absolute; right: 12px; width: 20px; height: 20px; color: #94a3b8; cursor: pointer; padding: 2px; }
+  .login-eye:hover { color: #10b981; }
+  .login-error { color: #ef4444; font-size: 13px; margin: -6px 0 12px; min-height: 18px; }
+  .login-btns { display: flex; gap: 12px; }
+  .login-btn-main {
+    flex: 1; height: 46px; border: none; border-radius: 12px; cursor: pointer;
+    background: linear-gradient(135deg, #059669 0%, #047857 100%); color: #fff;
+    font-size: 15px; font-weight: 700; transition: all .15s;
+    box-shadow: 0 6px 16px rgba(5, 150, 105, 0.3);
+  }
+  .login-btn-main:hover { filter: brightness(1.06); }
+  .login-btn-main:active { transform: scale(0.97); }
+  .login-btn-guest {
+    flex: 1; height: 46px; border: 1.5px solid #cbd5e1; border-radius: 12px; cursor: pointer;
+    background: #fff; color: #475569; font-size: 15px; font-weight: 600; transition: all .15s;
+  }
+  .login-btn-guest:hover { border-color: #10b981; color: #059669; background: #f0fdf9; }
+  .login-btn-guest:active { transform: scale(0.97); }
+  .login-avatar {
+    position: absolute; right: 26px; bottom: 22px; width: 56px; height: 56px; border-radius: 50%;
+    object-fit: cover; box-shadow: 0 6px 18px rgba(15,110,90,.25); border: 3px solid #fff; z-index: 2;
+  }
+  .logout-btn {
+    height: 32px; padding: 0 12px; display: flex; align-items: center; gap: 4px; cursor: pointer;
+    color: #6b7280; font-size: 13px; border-radius: 8px; transition: all .2s; flex-shrink: 0;
+  }
+  .logout-btn:hover { background: #f3f4f6; color: #ef4444; }
+  .guest-tag { display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px; background: #f3f4f6; border-radius: 18px; }
+  .guest-avatar { width: 26px; height: 26px; border-radius: 50%; object-fit: cover; }
+  .guest-tag span { font-size: 13px; color: #6b7280; font-weight: 600; }
+  .header-title-text { font-size: 18px; font-weight: 700; color: #1a1a2e; }
+
 </style>
 </head>
 <body>
 <div id="app">
   <el-container class="layout">
-    <el-aside width="260px" class="sidebar">
+    <el-aside width="260px" class="sidebar" v-if="isAdmin">
       <div class="sidebar-logo">
         <div class="logo-text">黑八影视监控</div>
       </div>
 
       <div class="menu-section">
         <el-menu :default-active="activeMenu" @select="handleMenuSelect" class="sidebar-menu">
-          <el-submenu index="douyin" opened>
+          <el-submenu index="douyin" opened v-if="isAdmin">
             <template slot="title">
               <i class="el-icon-video-camera icon-svg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="14" height="12" rx="2"/><polygon points="16,10 22,7 22,17 16,14"/></svg></i>
               <span>抖音博主</span>
@@ -314,7 +383,7 @@
               </div>
             </div>
           </el-submenu>
-          <el-submenu index="tiktok">
+          <el-submenu index="tiktok" v-if="isAdmin">
             <template slot="title">
               <i class="el-icon-mobile-phone icon-svg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="6" y="2" width="12" height="20" rx="2"/><line x1="11" y1="18" x2="13" y2="18"/></svg></i>
               <span>TK博主</span>
@@ -341,15 +410,23 @@
     <el-container class="main-container">
       <el-header class="header">
         <div class="header-left">
-          <div class="search-box">
+          <div v-if="!isAdmin" class="header-title-text">黑八影视监控</div>
+          <div class="search-box" v-if="isAdmin">
             <i class="el-icon-search icon-svg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></i>
             <input type="text" v-model="searchText" placeholder="搜索博主...">
           </div>
         </div>
         <div class="header-right">
-          <div class="header-icon" title="抓取历史" onclick="window.historyOpen()"><i class="el-icon-date icon-svg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="8" y1="3" x2="8" y2="7"/><line x1="16" y1="3" x2="16" y2="7"/></svg></i></div>
-          <div class="header-icon"><i class="el-icon-bell icon-svg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></i></div>
-          <div class="header-avatar"><img src="avatar.jpg" style="width:100%;height:100%;border-radius:50%;object-fit:cover;"></div>
+          <template v-if="isAdmin">
+            <div class="header-icon" title="抓取历史" onclick="window.historyOpen()"><i class="el-icon-date icon-svg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="8" y1="3" x2="8" y2="7"/><line x1="16" y1="3" x2="16" y2="7"/></svg></i></div>
+            <div class="header-icon"><i class="el-icon-bell icon-svg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></i></div>
+            <div class="header-avatar" title="管理员"><img src="avatar.jpg" style="width:100%;height:100%;border-radius:50%;object-fit:cover;"></div>
+          </template>
+          <div v-else class="guest-tag"><img class="guest-avatar" src="avatar.jpg" alt=""><span>游客</span></div>
+          <div class="logout-btn" v-if="loggedIn" @click="logout" title="退出登录">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            退出
+          </div>
         </div>
       </el-header>
 
@@ -587,6 +664,29 @@
   <el-dialog :visible.sync="coverDialogVisible" width="420px" :show-close="true" custom-class="cover-dialog">
     <img :src="currentCover" style="width:100%;border-radius:10px;">
   </el-dialog>
+
+  <!-- 登录界面 -->
+  <div class="login-mask" v-if="!loggedIn">
+    <div class="login-card">
+      <div class="login-title">你好</div>
+      <div class="login-sub">欢迎使用黑八影视监控</div>
+      <div class="login-field">
+        <svg class="field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <input v-model="loginUser" class="login-user-input" placeholder="用户名" autocomplete="off" @keyup.enter="doLogin">
+      </div>
+      <div class="login-field">
+        <svg class="field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        <input v-model="loginPass" class="login-pass-input" :type="showPass ? 'text' : 'password'" placeholder="密码" autocomplete="off" @keyup.enter="doLogin">
+        <svg class="login-eye" :class="{active: showPass}" @click="showPass = !showPass" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+      </div>
+      <div class="login-error">{{ loginError }}</div>
+      <div class="login-btns">
+        <button class="login-btn-main" @click="doLogin">登录</button>
+        <button class="login-btn-guest" @click="guestLogin">游客登录</button>
+      </div>
+    </div>
+    <img class="login-avatar" src="avatar.jpg" alt="">
+  </div>
 </div>
 
 <script>
@@ -623,9 +723,16 @@ new Vue({
       fanMax: 0,
       editingName: null,
       editNameVal: '',
+      loginRole: '',
+      loginUser: '',
+      loginPass: '',
+      loginError: '',
+      showPass: false,
     }
   },
   computed: {
+    isAdmin() { return this.loginRole === 'admin'; },
+    loggedIn() { return this.loginRole === 'admin' || this.loginRole === 'guest'; },
     douyinBloggers() {
       let list = BLOGGER_DATA;
       if (this.searchText) {
@@ -695,6 +802,40 @@ new Vue({
     }
   },
   methods: {
+    doLogin() {
+      if (this.loginUser === 'root' && this.loginPass === 'c87311923') {
+        this.loginRole = 'admin';
+        try { localStorage.setItem('bb_login_role', 'admin'); } catch (e) {}
+        this.loginError = '';
+        this.initByRole();
+      } else {
+        this.loginError = '账号或密码错误，请重试';
+      }
+    },
+    guestLogin() {
+      this.loginRole = 'guest';
+      try { localStorage.setItem('bb_login_role', 'guest'); } catch (e) {}
+      this.loginError = '';
+      this.initByRole();
+    },
+    logout() {
+      this.loginRole = '';
+      try { localStorage.removeItem('bb_login_role'); } catch (e) {}
+      this.loginUser = '';
+      this.loginPass = '';
+      this.loginError = '';
+      this.currentBlogger = null;
+      this.activeMenu = 'douyin';
+    },
+    initByRole() {
+      if (this.loginRole === 'guest') {
+        this.activeMenu = 'search';
+        this.currentBlogger = null;
+      } else if (this.loginRole === 'admin' && BLOGGER_DATA.length > 0) {
+        this.activeMenu = 'douyin';
+        this.selectBlogger(BLOGGER_DATA[0]);
+      }
+    },
     handleMenuSelect(index) {
       if (index === 'search-open') {
         this.activeMenu = 'search';
@@ -1022,9 +1163,10 @@ new Vue({
   },
   mounted() {
     this.applyNameOverrides();
-    if (BLOGGER_DATA.length > 0) {
-      this.selectBlogger(BLOGGER_DATA[0]);
-    }
+    let saved = '';
+    try { saved = localStorage.getItem('bb_login_role') || ''; } catch (e) {}
+    this.loginRole = (saved === 'admin' || saved === 'guest') ? saved : '';
+    this.initByRole();
     window.addEventListener('resize', () => {
       if (this.pieChart) this.pieChart.resize();
       if (this.countryPieChart) this.countryPieChart.resize();
