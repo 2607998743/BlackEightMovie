@@ -1,6 +1,14 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
+<script>
+(function(){
+  if (location.pathname.indexOf("m.html") >= 0) return;
+  var ua = navigator.userAgent;
+  var isMobile = /Android|iPhone|iPod/i.test(ua) || (ua.indexOf("Mac") > -1 && navigator.maxTouchPoints > 1);
+  if (isMobile) location.replace("m.html");
+})();
+</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>黑八影视监控</title>
