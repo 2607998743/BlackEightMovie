@@ -877,7 +877,7 @@ new Vue({
         .then(r => r.json())
         .then(j => {
           if (j.content && j.content.sha) {
-            this.$message.success('已提交 GitHub，正在同步图片并刷新数据…');
+            this.$message.success('已提交 GitHub 线上，图片同步中…');
             return fetch('https://api.github.com/repos/2607998743/BlackEightMovie/contents/index.html', {headers})
               .then(r => r.json())
               .then(m2 => {
@@ -917,6 +917,27 @@ new Vue({
       };
       return run();
     },
+    checkLatest() {
+      var self = this;
+      ['blogger_data.js', 'tk_data.js'].forEach(function(fn) {
+        fetch('https://raw.githubusercontent.com/2607998743/BlackEightMovie/main/' + fn, {cache: 'no-store'})
+          .then(function(r) { return r.text(); })
+          .then(function(txt) {
+            var m = txt.match(/(?:const|var) \w+ = (\[.*?\]);/s);
+            if (!m) return;
+            var arr;
+            try { arr = JSON.parse(m[1]); } catch (e) { return; }
+            var target = (fn === 'blogger_data.js') ? BLOGGER_DATA : TK_DATA;
+            if (JSON.stringify(target) !== JSON.stringify(arr)) {
+              target.length = 0;
+              Array.prototype.push.apply(target, arr);
+              self.dataVersion++;
+              self.$forceUpdate();
+            }
+          })
+          .catch(function() {});
+      });
+    },
     downloadText(filename, text) {
       const blob = new Blob(['\ufeff' + text], {type: 'application/javascript;charset=utf-8'});
       const a = document.createElement('a');
@@ -944,7 +965,7 @@ new Vue({
         var files = [];
         if (b.avatar && b.avatar.indexOf('http') !== 0) files.push(b.avatar);
         var self = this;
-        this.githubPush('blogger_data.js').then(function() { return self.deleteGithubFiles(files); }).then(function() { setTimeout(function() { location.replace(location.pathname + '?t=' + Date.now()); }, 500); }).catch(function() { setTimeout(function() { location.replace(location.pathname + '?t=' + Date.now()); }, 2000); });
+        this.githubPush('blogger_data.js').then(function() { return self.deleteGithubFiles(files); }).catch(function() {});
         this.$message({type: 'success', message: '已删除「' + b.name + '」，正在提交 GitHub 线上…'});
       }).catch(function() {});
     },
@@ -960,7 +981,7 @@ new Vue({
         if (b.avatar && b.avatar.indexOf('http') !== 0) files.push(b.avatar);
         (b.videos || []).forEach(function(v) { if (v.cover && v.cover.indexOf('http') !== 0) files.push(v.cover); });
         var self = this;
-        this.githubPush('tk_data.js').then(function() { return self.deleteGithubFiles(files); }).then(function() { setTimeout(function() { location.replace(location.pathname + '?t=' + Date.now()); }, 500); }).catch(function() { setTimeout(function() { location.replace(location.pathname + '?t=' + Date.now()); }, 2000); });
+        this.githubPush('tk_data.js').then(function() { return self.deleteGithubFiles(files); }).catch(function() {});
         this.$message({type: 'success', message: '已删除「' + b.name + '」，正在提交 GitHub 线上…'});
       }).catch(function() {});
     },
@@ -974,7 +995,7 @@ new Vue({
         if (v.cover && v.cover.indexOf('http') !== 0) files.push(v.cover);
         var dataFile = (this.currentBlogger.platform === 'tk') ? 'tk_data.js' : 'blogger_data.js';
         var self = this;
-        this.githubPush(dataFile).then(function() { return self.deleteGithubFiles(files); }).then(function() { setTimeout(function() { location.replace(location.pathname + '?t=' + Date.now()); }, 500); }).catch(function() { setTimeout(function() { location.replace(location.pathname + '?t=' + Date.now()); }, 2000); });
+        this.githubPush(dataFile).then(function() { return self.deleteGithubFiles(files); }).catch(function() {});
         this.$message({type: 'success', message: '已删除该视频，正在提交 GitHub 线上…'});
       }).catch(function() {});
     },
@@ -1339,6 +1360,8 @@ new Vue({
   },
   mounted() {
     this.applyNameOverrides();
+    this.checkLatest();
+    setInterval(() => { this.checkLatest(); }, 60000);
     let saved = '';
     try { saved = localStorage.getItem('bb_login_role') || ''; } catch (e) {}
     this.loginRole = (saved === 'admin' || saved === 'guest') ? saved : '';
