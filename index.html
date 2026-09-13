@@ -14,8 +14,8 @@
 <title>黑八影视监控</title>
 <link rel="stylesheet" href="libs/element-ui.css">
 <script src="libs/vue.js?v=5"></script>
-<script src="blogger_data.js?v=1789301690601"></script>
-<script src="tk_data.js?v=1789301690601"></script>
+<script src="blogger_data.js?v=5"></script>
+<script src="tk_data.js?v=7"></script>
 <script src="monitor_history_data.js?v=1"></script>
 <script src="libs/element-ui.js?v=5"></script>
 <script src="libs/echarts.min.js?v=5"></script>
@@ -922,6 +922,21 @@ new Vue({
       var self = this;
       var token = String(this.syncToken || (function(){ try { return localStorage.getItem('bb_gh_token') || ''; } catch(e){ return ''; } })()).replace(/\\s+/g, '').replace(/[^\\x20-\\x7E]/g, '');
       if (!token) return;
+      var curTs = parseInt((location.search.match(/[?&]t=(\d{6,})/) || [])[1] || '0', 10) || 0;
+      fetch('https://api.github.com/repos/2607998743/BlackEightMovie/contents/index.html', {
+        headers: {'Authorization': 'token ' + token, 'Accept': 'application/vnd.github.raw'},
+        cache: 'no-store'
+      })
+        .then(function(r) { if (!r.ok) { throw new Error('http ' + r.status); } return r.text(); })
+        .then(function(html) {
+          var ts = 0;
+          var ms = html.match(/[?&](?:v|t)=(\d{10,})/g) || [];
+          ms.forEach(function(m) { var n = parseInt(m.replace(/\D/g, ''), 10) || 0; if (n > ts) ts = n; });
+          if (ts > curTs) {
+            setTimeout(function() { location.replace(location.pathname + '?t=' + Date.now()); }, 3000);
+          }
+        })
+        .catch(function() {});
       ['blogger_data.js', 'tk_data.js'].forEach(function(fn) {
         fetch('https://api.github.com/repos/2607998743/BlackEightMovie/contents/' + fn, {
           headers: {'Authorization': 'token ' + token, 'Accept': 'application/vnd.github.raw'},
@@ -970,7 +985,7 @@ new Vue({
         var files = [];
         if (b.avatar && b.avatar.indexOf('http') !== 0) files.push(b.avatar);
         var self = this;
-        this.githubPush('blogger_data.js').then(function() { return self.deleteGithubFiles(files); }).catch(function() {});
+        this.githubPush('blogger_data.js').then(function() { try { history.replaceState(null, '', location.pathname + '?t=' + Date.now()); } catch(e) {} return self.deleteGithubFiles(files); }).catch(function() {});
         this.$message({type: 'success', message: '已删除「' + b.name + '」，正在提交 GitHub 线上…'});
       }).catch(function() {});
     },
@@ -985,7 +1000,7 @@ new Vue({
         if (b.avatar && b.avatar.indexOf('http') !== 0) files.push(b.avatar);
         (b.videos || []).forEach(function(v) { if (v.cover && v.cover.indexOf('http') !== 0) files.push(v.cover); });
         var self = this;
-        this.githubPush('tk_data.js').then(function() { return self.deleteGithubFiles(files); }).catch(function() {});
+        this.githubPush('tk_data.js').then(function() { try { history.replaceState(null, '', location.pathname + '?t=' + Date.now()); } catch(e) {} return self.deleteGithubFiles(files); }).catch(function() {});
         this.$message({type: 'success', message: '已删除「' + b.name + '」，正在提交 GitHub 线上…'});
       }).catch(function() {});
     },
@@ -994,12 +1009,11 @@ new Vue({
         const i = this.currentBlogger.videos.indexOf(v);
         if (i > -1) this.currentBlogger.videos.splice(i, 1);
         this.dataVersion++;
-        this.exportBloggerData();
         var files = [];
         if (v.cover && v.cover.indexOf('http') !== 0) files.push(v.cover);
         var dataFile = (this.currentBlogger.platform === 'tk') ? 'tk_data.js' : 'blogger_data.js';
         var self = this;
-        this.githubPush(dataFile).then(function() { return self.deleteGithubFiles(files); }).catch(function() {});
+        this.githubPush(dataFile).then(function() { try { history.replaceState(null, '', location.pathname + '?t=' + Date.now()); } catch(e) {} return self.deleteGithubFiles(files); }).catch(function() {});
         this.$message({type: 'success', message: '已删除该视频，正在提交 GitHub 线上…'});
       }).catch(function() {});
     },
@@ -1474,5 +1488,5 @@ new Vue({
 })();
 </script>
 
-<div class="app-version">v2.1.2</div></body>
+<div class="app-version">v2.1.3</div></body>
 </html>
