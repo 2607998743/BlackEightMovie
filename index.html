@@ -14,8 +14,8 @@
 <title>黑八影视监控</title>
 <link rel="stylesheet" href="libs/element-ui.css">
 <script src="libs/vue.js?v=5"></script>
-<script src="blogger_data.js?v=1789296649689"></script>
-<script src="tk_data.js?v=1789296649689"></script>
+<script src="blogger_data.js?v=5"></script>
+<script src="tk_data.js?v=7"></script>
 <script src="monitor_history_data.js?v=1"></script>
 <script src="libs/element-ui.js?v=5"></script>
 <script src="libs/echarts.min.js?v=5"></script>
@@ -899,16 +899,23 @@ new Vue({
       if (!token || !paths || !paths.length) return Promise.resolve();
       const headers = {'Authorization': 'token ' + token, 'Accept': 'application/vnd.github+json'};
       const enc = function(p) { return p.split('/').map(encodeURIComponent).join('/'); };
-      const jobs = paths.filter(function(p) { return p && p.indexOf('http') !== 0; }).map(function(p) {
+      const sleep = function(ms) { return new Promise(function(res) { setTimeout(res, ms); }); };
+      const delOne = function(p) {
         return fetch('https://api.github.com/repos/2607998743/BlackEightMovie/contents/' + enc(p), {headers})
           .then(function(r) { return r.json(); })
           .then(function(m) {
             if (!m.sha) return;
             return fetch('https://api.github.com/repos/2607998743/BlackEightMovie/contents/' + enc(p), {method: 'DELETE', headers, body: JSON.stringify({message: '删除博主图片 ' + p, sha: m.sha})});
-          })
-          .catch(function() {});
-      });
-      return Promise.all(jobs);
+          });
+      };
+      var list = paths.filter(function(p) { return p && p.indexOf('http') !== 0; });
+      var i = 0;
+      var run = function() {
+        if (i >= list.length) return Promise.resolve();
+        var p = list[i++];
+        return delOne(p).catch(function() { return sleep(800).then(function() { return delOne(p); }); }).catch(function() {}).then(run);
+      };
+      return run();
     },
     downloadText(filename, text) {
       const blob = new Blob(['\ufeff' + text], {type: 'application/javascript;charset=utf-8'});
