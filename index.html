@@ -429,6 +429,7 @@
           <template v-if="isAdmin">
             <div class="header-icon" title="抓取历史" onclick="window.historyOpen()"><i class="el-icon-date icon-svg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="8" y1="3" x2="8" y2="7"/><line x1="16" y1="3" x2="16" y2="7"/></svg></i></div>
             <div class="header-icon"><i class="el-icon-bell icon-svg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></i></div>
+            <div class="header-icon" title="GitHub 同步设置" @click="openSyncSettings"><i class="el-icon-setting icon-svg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></i></div>
             <div class="header-avatar" title="管理员"><img src="avatar.jpg" style="width:100%;height:100%;border-radius:50%;object-fit:cover;"></div>
           </template>
           <div v-else class="guest-tag"><img class="guest-avatar" src="avatar.jpg" alt=""><span>游客</span></div>
@@ -675,6 +676,19 @@
     </el-container>
   </el-container>
 
+  <el-dialog title="GitHub 同步设置" :visible.sync="syncDialogVisible" width="440px" append-to-body>
+        <div class="sync-desc" style="font-size:13px;color:#374151;margin-bottom:10px;">配置后，删除博主/视频会<b>直接提交到 GitHub 仓库</b>，GitHub Pages 约 1 分钟内自动生效，无需手动替换文件。</div>
+        <el-input v-model="syncToken" placeholder="GitHub Personal Access Token（仓库读写权限）" show-password style="width:100%;"></el-input>
+        <div style="margin-top:10px;font-size:12px;color:#9ca3af;line-height:1.7;">
+          创建入口：GitHub → Settings → Developer settings → Personal access tokens → Generate new token，勾选 repo（或 Fine-grained 授权 Contents 读写、仅限 BlackEightMovie 仓库）。<br>
+          Token 仅保存在本机浏览器 localStorage，不会上传到别处。
+        </div>
+        <div style="margin-top:14px;text-align:right;">
+          <el-button size="mini" @click="testGithubToken">测试连接</el-button>
+          <el-button size="mini" type="primary" @click="saveSyncToken">保存</el-button>
+        </div>
+      </el-dialog>
+
   <el-dialog :visible.sync="coverDialogVisible" width="420px" :show-close="true" custom-class="cover-dialog">
     <img :src="currentCover" style="width:100%;border-radius:10px;">
   </el-dialog>
@@ -743,6 +757,8 @@ new Vue({
       loginError: '',
       showPass: false,
       dataVersion: 0,
+      syncDialogVisible: false,
+      syncToken: '',
     }
   },
   computed: {
@@ -818,6 +834,53 @@ new Vue({
     }
   },
   methods: {
+    openSyncSettings() {
+      let t = '';
+      try { t = localStorage.getItem('bb_gh_token') || ''; } catch (e) {}
+      this.syncToken = t;
+      this.syncDialogVisible = true;
+    },
+    saveSyncToken() {
+      try { localStorage.setItem('bb_gh_token', this.syncToken); } catch (e) {}
+      this.syncDialogVisible = false;
+      this.$message.success('Token 已保存（仅本机浏览器）');
+    },
+    testGithubToken() {
+      if (!this.syncToken) { this.$message.warning('请先输入 Token'); return; }
+      fetch('https://api.github.com/repos/2607998743/BlackEightMovie', {headers: {'Authorization': 'token ' + this.syncToken, 'Accept': 'application/vnd.github+json'}})
+        .then(r => r.json())
+        .then(j => {
+          if (j.full_name) this.$message.success('连接成功：' + j.full_name);
+          else this.$message.error('连接失败：' + (j.message || '未知错误'));
+        })
+        .catch(e => this.$message.error('网络异常：' + e.message));
+    },
+    githubPush(filename) {
+      const token = this.syncToken || (function(){ try { return localStorage.getItem('bb_gh_token') || ''; } catch(e){ return ''; } })();
+      if (!token) {
+        this.$message.warning('未配置 GitHub Token：数据仅更新当前页面。请在右上角齿轮中配置后，再次删除即可自动同步线上');
+        return;
+      }
+      const headers = {'Authorization': 'token ' + token, 'Accept': 'application/vnd.github+json'};
+      const path = filename;
+      const newText = filename === 'blogger_data.js'
+        ? 'const BLOGGER_DATA = ' + JSON.stringify(BLOGGER_DATA) + ';'
+        : 'const TK_DATA = ' + JSON.stringify(TK_DATA) + ';';
+      const b64 = btoa(unescape(encodeURIComponent(newText)));
+      fetch('https://api.github.com/repos/2607998743/BlackEightMovie/contents/' + path, {headers})
+        .then(r => r.json())
+        .then(meta => {
+          if (!meta.sha) throw new Error(meta.message || '无法读取线上文件');
+          const body = JSON.stringify({message: '网页删除数据 ' + new Date().toLocaleString('zh-CN', {hour12: false}), content: b64, sha: meta.sha});
+          return fetch('https://api.github.com/repos/2607998743/BlackEightMovie/contents/' + path, {method: 'PUT', headers, body});
+        })
+        .then(r => r.json())
+        .then(j => {
+          if (j.content && j.content.sha) this.$message.success('已提交 GitHub，线上约 1 分钟内生效');
+          else throw new Error(j.message || '提交失败');
+        })
+        .catch(e => this.$message.error('同步失败：' + e.message + '（本地数据已更新，可稍后重试删除或手动同步）'));
+    },
     downloadText(filename, text) {
       const blob = new Blob(['\ufeff' + text], {type: 'application/javascript;charset=utf-8'});
       const a = document.createElement('a');
@@ -842,7 +905,8 @@ new Vue({
         }
         this.dataVersion++;
         this.exportBloggerData();
-        this.$message({type: 'success', message: '已删除「' + b.name + '」，新版 blogger_data.js 已下载，请替换工作目录同名文件后告诉我同步线上'});
+        this.githubPush('blogger_data.js');
+        this.$message({type: 'success', message: '已删除「' + b.name + '」，正在提交 GitHub 线上…'});
       }).catch(function() {});
     },
     deleteTkBlogger(b) {
@@ -853,7 +917,8 @@ new Vue({
           this.currentBlogger = {name: '', analysis: {text: ''}, style: [], country_dist: [], videos: []};
         }
         this.exportTkData();
-        this.$message({type: 'success', message: '已删除「' + b.name + '」，新版 tk_data.js 已下载，请替换工作目录同名文件后告诉我同步线上'});
+        this.githubPush('tk_data.js');
+        this.$message({type: 'success', message: '已删除「' + b.name + '」，正在提交 GitHub 线上…'});
       }).catch(function() {});
     },
     deleteVideo(v) {
@@ -862,7 +927,8 @@ new Vue({
         if (i > -1) this.currentBlogger.videos.splice(i, 1);
         this.dataVersion++;
         this.exportBloggerData();
-        this.$message({type: 'success', message: '已删除该视频，新版 blogger_data.js 已下载，请替换工作目录同名文件后告诉我同步线上'});
+        this.githubPush('blogger_data.js');
+        this.$message({type: 'success', message: '已删除该视频，正在提交 GitHub 线上…'});
       }).catch(function() {});
     },
     doLogin() {
