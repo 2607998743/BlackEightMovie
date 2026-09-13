@@ -52,6 +52,10 @@
   .blogger-info { flex: 1; min-width: 0; }
   .blogger-name { font-size: 13px; color: #1f2937; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 500; }
   .blogger-fans { font-size: 11px; color: #9ca3af; margin-top: 1px; }
+  .blogger-del-btn { opacity: 0; width: 22px; height: 22px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; border-radius: 6px; color: #9ca3af; cursor: pointer; transition: all .15s; margin-left: 4px; }
+  .blogger-item:hover .blogger-del-btn { opacity: 1; }
+  .blogger-del-btn:hover { background: #fee2e2; color: #ef4444; }
+  .video-del-btn { color: #ef4444; }
 
   .sidebar-footer { padding: 16px 12px; border-top: 1px solid #f0f2f5; margin-top: 12px; }
   .upgrade-card { background: linear-gradient(135deg, #1e3a8a 0%, #3b5bdb 100%); border-radius: 14px; padding: 16px; color: #fff; }
@@ -380,6 +384,9 @@
                   <div class="blogger-name">{{ b.name }}</div>
                   <div class="blogger-fans">粉丝 {{ b.fans_str }}</div>
                 </div>
+                <div class="blogger-del-btn" @click.stop="deleteBlogger(b)" title="删除博主">
+                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+                </div>
               </div>
             </div>
           </el-submenu>
@@ -395,6 +402,9 @@
                 <div class="blogger-info">
                   <div class="blogger-name">{{ b.name }}</div>
                   <div class="blogger-fans">粉丝 {{ b.fans_str }}</div>
+                </div>
+                <div class="blogger-del-btn" @click.stop="deleteTkBlogger(b)" title="删除博主">
+                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
                 </div>
               </div>
             </div>
@@ -548,6 +558,11 @@
                   <el-tag v-else-if="scope.row.likes > 50000" type="danger" size="mini">爆款</el-tag>
                   <el-tag v-else-if="scope.row.likes > 10000" type="warning" size="mini">热门</el-tag>
                   <el-tag v-else type="info" size="mini">普通</el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column label="操作" width="70" align="center">
+                <template slot-scope="scope">
+                  <el-button type="text" class="video-del-btn" @click="deleteVideo(scope.row)">删除</el-button>
                 </template>
               </el-table-column>
             </el-table>
@@ -728,12 +743,14 @@ new Vue({
       loginPass: '',
       loginError: '',
       showPass: false,
+      dataVersion: 0,
     }
   },
   computed: {
     isAdmin() { return this.loginRole === 'admin'; },
     loggedIn() { return this.loginRole === 'admin' || this.loginRole === 'guest'; },
     douyinBloggers() {
+      void this.dataVersion;
       let list = BLOGGER_DATA;
       if (this.searchText) {
         list = list.filter(b => b.name.includes(this.searchText));
@@ -802,6 +819,53 @@ new Vue({
     }
   },
   methods: {
+    downloadText(filename, text) {
+      const blob = new Blob(['\ufeff' + text], {type: 'application/javascript;charset=utf-8'});
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(function() { URL.revokeObjectURL(a.href); a.remove(); }, 200);
+    },
+    exportBloggerData() {
+      this.downloadText('blogger_data.js', 'const BLOGGER_DATA = ' + JSON.stringify(BLOGGER_DATA) + ';');
+    },
+    exportTkData() {
+      this.downloadText('tk_data.js', 'const TK_DATA = ' + JSON.stringify(TK_DATA) + ';');
+    },
+    deleteBlogger(b) {
+      this.$confirm('确定删除博主「' + b.name + '」吗？此操作不可恢复。', '删除确认', {type: 'warning', confirmButtonText: '删除', cancelButtonText: '取消'}).then(() => {
+        const i = BLOGGER_DATA.indexOf(b);
+        if (i > -1) BLOGGER_DATA.splice(i, 1);
+        if (this.currentBlogger && this.currentBlogger.name === b.name) {
+          this.currentBlogger = {name: '', analysis: {text: ''}, style: [], country_dist: [], videos: []};
+        }
+        this.dataVersion++;
+        this.exportBloggerData();
+        this.$message({type: 'success', message: '已删除「' + b.name + '」，新版 blogger_data.js 已下载，请替换工作目录同名文件后告诉我同步线上'});
+      }).catch(function() {});
+    },
+    deleteTkBlogger(b) {
+      this.$confirm('确定删除 TK 博主「' + b.name + '」吗？此操作不可恢复。', '删除确认', {type: 'warning', confirmButtonText: '删除', cancelButtonText: '取消'}).then(() => {
+        const i = this.tkBloggers.indexOf(b);
+        if (i > -1) this.tkBloggers.splice(i, 1);
+        if (this.currentBlogger && this.currentBlogger.name === b.name) {
+          this.currentBlogger = {name: '', analysis: {text: ''}, style: [], country_dist: [], videos: []};
+        }
+        this.exportTkData();
+        this.$message({type: 'success', message: '已删除「' + b.name + '」，新版 tk_data.js 已下载，请替换工作目录同名文件后告诉我同步线上'});
+      }).catch(function() {});
+    },
+    deleteVideo(v) {
+      this.$confirm('确定删除该条视频数据吗？此操作不可恢复。', '删除确认', {type: 'warning', confirmButtonText: '删除', cancelButtonText: '取消'}).then(() => {
+        const i = this.currentBlogger.videos.indexOf(v);
+        if (i > -1) this.currentBlogger.videos.splice(i, 1);
+        this.dataVersion++;
+        this.exportBloggerData();
+        this.$message({type: 'success', message: '已删除该视频，新版 blogger_data.js 已下载，请替换工作目录同名文件后告诉我同步线上'});
+      }).catch(function() {});
+    },
     doLogin() {
       if (this.loginUser === 'root' && this.loginPass === 'c87311923') {
         this.loginRole = 'admin';
