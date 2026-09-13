@@ -962,7 +962,6 @@ new Vue({
           this.currentBlogger = {name: '', analysis: {text: ''}, style: [], country_dist: [], videos: []};
         }
         this.dataVersion++;
-        this.exportBloggerData();
         var files = [];
         if (b.avatar && b.avatar.indexOf('http') !== 0) files.push(b.avatar);
         var self = this;
@@ -977,7 +976,6 @@ new Vue({
         if (this.currentBlogger && this.currentBlogger.name === b.name) {
           this.currentBlogger = {name: '', analysis: {text: ''}, style: [], country_dist: [], videos: []};
         }
-        this.exportTkData();
         var files = [];
         if (b.avatar && b.avatar.indexOf('http') !== 0) files.push(b.avatar);
         (b.videos || []).forEach(function(v) { if (v.cover && v.cover.indexOf('http') !== 0) files.push(v.cover); });
