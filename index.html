@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <script>
@@ -876,7 +876,21 @@ new Vue({
         })
         .then(r => r.json())
         .then(j => {
-          if (j.content && j.content.sha) this.$message.success('已提交 GitHub，线上约 1 分钟内生效');
+          if (j.content && j.content.sha) {
+              this.$message.success('已提交 GitHub，正在刷新数据…');
+              fetch('https://api.github.com/repos/2607998743/BlackEightMovie/contents/index.html', {headers})
+                .then(r => r.json())
+                .then(m2 => {
+                  if (!m2.sha) return null;
+                  var html = decodeURIComponent(escape(atob(m2.content)));
+                  var ts = String(Date.now());
+                  html = html.replace(/blogger_data\.js\?v=\d+/, 'blogger_data.js?v=' + ts).replace(/tk_data\.js\?v=\d+/, 'tk_data.js?v=' + ts);
+                  var nb = btoa(unescape(encodeURIComponent(html)));
+                  return fetch('https://api.github.com/repos/2607998743/BlackEightMovie/contents/index.html', {method: 'PUT', headers, body: JSON.stringify({message: 'bump data version ' + new Date().toLocaleString('zh-CN', {hour12: false}), content: nb, sha: m2.sha})});
+                })
+                .then(() => { try { setTimeout(function() { location.replace(location.pathname + '?t=' + Date.now()); }, 1200); } catch(e) {} })
+                .catch(() => { try { setTimeout(function() { location.replace(location.pathname + '?t=' + Date.now()); }, 1200); } catch(e) {} });
+            }
           else throw new Error(j.message || '提交失败');
         })
         .catch(e => this.$message.error('同步失败：' + e.message + '（本地数据已更新，可稍后重试删除或手动同步）'));
