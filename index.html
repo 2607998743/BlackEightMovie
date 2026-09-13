@@ -14,8 +14,8 @@
 <title>黑八影视监控</title>
 <link rel="stylesheet" href="libs/element-ui.css">
 <script src="libs/vue.js?v=5"></script>
-<script src="blogger_data.js?v=1789301060652"></script>
-<script src="tk_data.js?v=1789301060652"></script>
+<script src="blogger_data.js?v=5"></script>
+<script src="tk_data.js?v=7"></script>
 <script src="monitor_history_data.js?v=1"></script>
 <script src="libs/element-ui.js?v=5"></script>
 <script src="libs/echarts.min.js?v=5"></script>
@@ -920,11 +920,16 @@ new Vue({
     },
     checkLatest() {
       var self = this;
+      var token = String(this.syncToken || (function(){ try { return localStorage.getItem('bb_gh_token') || ''; } catch(e){ return ''; } })()).replace(/\\s+/g, '').replace(/[^\\x20-\\x7E]/g, '');
+      if (!token) return;
       ['blogger_data.js', 'tk_data.js'].forEach(function(fn) {
-        fetch('https://raw.githubusercontent.com/2607998743/BlackEightMovie/main/' + fn, {cache: 'no-store'})
-          .then(function(r) { return r.text(); })
+        fetch('https://api.github.com/repos/2607998743/BlackEightMovie/contents/' + fn, {
+          headers: {'Authorization': 'token ' + token, 'Accept': 'application/vnd.github.raw'},
+          cache: 'no-store'
+        })
+          .then(function(r) { if (!r.ok) { throw new Error('http ' + r.status); } return r.text(); })
           .then(function(txt) {
-            var m = txt.match(/(?:const|var) \w+ = (\[.*?\]);/s);
+            var m = txt.match(/(?:const|var) \\w+ = (\\[.*?\\]);/s);
             if (!m) return;
             var arr;
             try { arr = JSON.parse(m[1]); } catch (e) { return; }
@@ -1469,5 +1474,5 @@ new Vue({
 })();
 </script>
 
-<div class="app-version">v2.1.1</div></body>
+<div class="app-version">v2.1.2</div></body>
 </html>
