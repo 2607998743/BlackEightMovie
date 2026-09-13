@@ -14,8 +14,8 @@
 <title>黑八影视监控</title>
 <link rel="stylesheet" href="libs/element-ui.css">
 <script src="libs/vue.js?v=5"></script>
-<script src="blogger_data.js?v=1789305377799"></script>
-<script src="tk_data.js?v=1789305377799"></script>
+<script src="blogger_data.js?v=1789305216001"></script>
+<script src="tk_data.js?v=1789305216001"></script>
 <script src="monitor_history_data.js?v=1"></script>
 <script src="libs/element-ui.js?v=5"></script>
 <script src="libs/echarts.min.js?v=5"></script>
@@ -877,11 +877,12 @@ new Vue({
           .then(meta => {
             if (!meta.sha) throw new Error(meta.message || '无法读取线上文件');
             const body = JSON.stringify({message: '网页删除数据 ' + new Date().toLocaleString('zh-CN', {hour12: false}), content: b64, sha: meta.sha});
-            return fetch(api + path, {method: 'PUT', headers, body}).then(r => r.json());
+            return fetch(api + path, {method: 'PUT', headers, body}).then(r => r.json().then(j => ({status: r.status, j: j})));
           })
-          .then(j => {
+          .then(o => {
+            const j = o.j;
             if (j.content && j.content.sha) return true;
-            if (retry < 2 && /does not match/i.test(j.message || '')) return doPut(retry + 1);
+            if (retry < 2 && (o.status === 422 || /does not match|but expected/i.test(j.message || ''))) return doPut(retry + 1);
             throw new Error(j.message || '提交失败');
           });
       };
@@ -1501,5 +1502,5 @@ new Vue({
 })();
 </script>
 
-<div class="app-version">v2.1.5</div></body>
+<div class="app-version">v2.1.6</div></body>
 </html>
