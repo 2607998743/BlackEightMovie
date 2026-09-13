@@ -856,7 +856,7 @@ new Vue({
         .catch(e => this.$message.error('网络异常：' + e.message));
     },
     githubPush(filename) {
-      const token = this.syncToken || (function(){ try { return localStorage.getItem('bb_gh_token') || ''; } catch(e){ return ''; } })();
+      const token = String(this.syncToken || (function(){ try { return localStorage.getItem('bb_gh_token') || ''; } catch(e){ return ''; } })()).replace(/\s+/g, '').replace(/[^\x20-\x7E]/g, '');
       if (!token) {
         this.$message.warning('未配置 GitHub Token：数据仅更新当前页面。请在右上角齿轮中配置后，再次删除即可自动同步线上');
         return Promise.resolve(false);
@@ -895,7 +895,7 @@ new Vue({
         .catch(e => { this.$message.error('同步失败：' + e.message + '（本地数据已更新，可稍后重试删除或手动同步）'); throw e; });
     },
     deleteGithubFiles(paths) {
-      const token = this.syncToken || (function(){ try { return localStorage.getItem('bb_gh_token') || ''; } catch(e){ return ''; } })();
+      const token = String(this.syncToken || (function(){ try { return localStorage.getItem('bb_gh_token') || ''; } catch(e){ return ''; } })()).replace(/\s+/g, '').replace(/[^\x20-\x7E]/g, '');
       if (!token || !paths || !paths.length) return Promise.resolve();
       const headers = {'Authorization': 'token ' + token, 'Accept': 'application/vnd.github+json'};
       const enc = function(p) { return p.split('/').map(encodeURIComponent).join('/'); };
