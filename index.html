@@ -14,8 +14,8 @@
 <title>黑八影视监控</title>
 <link rel="stylesheet" href="libs/element-ui.css">
 <script src="libs/vue.js?v=5"></script>
-<script src="blogger_data.js?v=1789304911183"></script>
-<script src="tk_data.js?v=1789304911183"></script>
+<script src="blogger_data.js?v=5"></script>
+<script src="tk_data.js?v=7"></script>
 <script src="monitor_history_data.js?v=1"></script>
 <script src="libs/element-ui.js?v=5"></script>
 <script src="libs/echarts.min.js?v=5"></script>
@@ -869,37 +869,40 @@ new Vue({
         ? 'const BLOGGER_DATA = ' + JSON.stringify(BLOGGER_DATA) + ';'
         : 'const TK_DATA = ' + JSON.stringify(TK_DATA) + ';';
       const b64 = btoa(unescape(encodeURIComponent(newText)));
+      const self = this;
+      const ts0 = String(Date.now());
+      const doPut = function(retry) {
+        return fetch(api + path, {headers})
+          .then(r => r.json())
+          .then(meta => {
+            if (!meta.sha) throw new Error(meta.message || '无法读取线上文件');
+            const body = JSON.stringify({message: '网页删除数据 ' + new Date().toLocaleString('zh-CN', {hour12: false}), content: b64, sha: meta.sha});
+            return fetch(api + path, {method: 'PUT', headers, body}).then(r => r.json());
+          })
+          .then(j => {
+            if (j.content && j.content.sha) return true;
+            if (retry < 2 && /does not match/i.test(j.message || '')) return doPut(retry + 1);
+            throw new Error(j.message || '提交失败');
+          });
+      };
       return Promise.all([
-        fetch(api + path, {headers}).then(r => r.json()),
-        fetch(api + 'index.html', {headers}).then(r => r.json())
-      ]).then(pair => {
-        const meta = pair[0], m2 = pair[1];
-        if (!meta.sha) throw new Error(meta.message || '无法读取线上文件');
-        const ts = String(Date.now());
-        const body = JSON.stringify({message: '网页删除数据 ' + new Date().toLocaleString('zh-CN', {hour12: false}), content: b64, sha: meta.sha});
-        let putIdx = Promise.resolve({});
-        if (m2 && m2.sha) {
+        doPut(0),
+        fetch(api + 'index.html', {headers}).then(r => r.json()).then(m2 => {
+          if (!m2 || !m2.sha) return;
           try {
             let html = decodeURIComponent(escape(atob(m2.content)));
-            html = html.replace(/blogger_data\.js\?v=\d+/, 'blogger_data.js?v=' + ts).replace(/tk_data\.js\?v=\d+/, 'tk_data.js?v=' + ts);
+            html = html.replace(/blogger_data\.js\?v=\d+/, 'blogger_data.js?v=' + ts0).replace(/tk_data\.js\?v=\d+/, 'tk_data.js?v=' + ts0);
             const nb = btoa(unescape(encodeURIComponent(html)));
-            putIdx = fetch(api + 'index.html', {method: 'PUT', headers, body: JSON.stringify({message: 'bump data version ' + new Date().toLocaleString('zh-CN', {hour12: false}), content: nb, sha: m2.sha})}).catch(() => ({}));
+            return fetch(api + 'index.html', {method: 'PUT', headers, body: JSON.stringify({message: 'bump data version ' + new Date().toLocaleString('zh-CN', {hour12: false}), content: nb, sha: m2.sha})}).catch(() => ({}));
           } catch (e) {}
-        }
-        return Promise.all([
-          fetch(api + path, {method: 'PUT', headers, body}),
-          putIdx
-        ]);
-      })
-        .then(pair2 => pair2[0].json())
-        .then(j => {
-          if (j.content && j.content.sha) {
-            this.$message.success('已提交 GitHub 线上，图片同步中…');
-            return true;
-          }
-          throw new Error(j.message || '提交失败');
         })
-        .catch(e => { this.$message.error('同步失败：' + e.message + '（本地数据已更新，可稍后重试删除或手动同步）'); throw e; });
+      ]).then(pair2 => {
+        if (pair2[0] === true) {
+          self.$message.success('已提交 GitHub 线上，图片同步中…');
+          return true;
+        }
+        throw new Error('提交失败');
+      }).catch(e => { self.$message.error('同步失败：' + e.message + '（本地数据已更新，可稍后重试删除或手动同步）'); throw e; });
     },
     deleteGithubFiles(paths) {
       const token = String(this.syncToken || (function(){ try { return localStorage.getItem('bb_gh_token') || ''; } catch(e){ return ''; } })()).replace(/\s+/g, '').replace(/[^\x20-\x7E]/g, '');
@@ -1498,5 +1501,5 @@ new Vue({
 })();
 </script>
 
-<div class="app-version">v2.1.4</div></body>
+<div class="app-version">v2.1.5</div></body>
 </html>
