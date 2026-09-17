@@ -724,7 +724,7 @@ new Vue({
         const blob = await resp.blob();
         const base = ((row.blogger || '') + '_' + (row.movie_name || row.video_id || 'video')).replace(/[\\/:*?"<>|\s]+/g, '_').slice(0, 60);
         this.saveBlob(blob, base + '.jpg');
-        this.toast('封面开始下载', 'ok');
+        this.toast('封面已保存：' + base + '.jpg（浏览器下载栏查看）', 'ok');
       } catch (e) {
         window.open(url, '_blank');
         this.toast('封面直下受限，已在新窗口打开，可在图片上右键保存', 'err');
@@ -736,8 +736,8 @@ new Vue({
         return this.parseTikTok(url);
       }
       if (/douyin\.com/.test(url)) {
-        this.toast('抖音视频需要签名，网页端无法直下；已为你打开原视频页（可下载或转存）', 'err');
-        setTimeout(() => window.open(url, '_blank'), 1200);
+        this.toast('抖音视频受签名保护，网页端无法直下（所有免费网页方案均不可行）。已在抖音页打开，可点分享用App保存，或在本站下封面', 'err');
+        setTimeout(() => window.open(url, '_blank'), 1500);
         return;
       }
       this.toast('无法识别视频来源', 'err');
@@ -758,14 +758,33 @@ new Vue({
         const v = d.data;
         if (!v.play) throw new Error('未获取到播放地址');
         const title = (v.title || 'tiktok_video').replace(/[\\/:*?"<>|\s]+/g, '_').slice(0, 60);
-        this.toast('解析成功，开始下载无水印视频…', 'ok');
+        this.toast('解析成功，正在下载…', 'ok');
         const r = await fetch(v.play);
         if (!r.ok) throw new Error('视频下载失败 HTTP ' + r.status);
-        const blob = await r.blob();
+        const total = parseInt(r.headers.get('Content-Length') || '0', 10);
+        let got = 0, parts = [];
+        const reader = r.body.getReader();
+        let lastPct = 0;
+        for (;;) {
+          const st = await reader.read();
+          if (st.done) break;
+          parts.push(st.value);
+          got += st.value.length;
+          if (total) {
+            const pct = Math.floor(got / total * 100);
+            if (pct - lastPct >= 25 || pct >= 100) { lastPct = pct; this.toast('下载中 ' + Math.min(pct, 99) + '%', 'ok'); }
+          }
+        }
+        const blob = new Blob(parts, { type: 'video/mp4' });
         this.saveBlob(blob, title + '.mp4');
-        this.toast('视频已开始下载', 'ok');
+        this.toast('视频已保存，请在浏览器下载栏查看', 'ok');
       } catch (e) {
-        this.toast('TikTok 解析失败：' + e.message + '，已打开原视频页', 'err');
+        const msg = String(e.message || e);
+        if (/Failed to fetch|NetworkError|TypeError/.test(msg)) {
+          this.toast('TikTok 下载失败：播放地址在当前网络不可达（TikTok 被墙，需挂梯子或换网络）。已打开原视频页', 'err');
+        } else {
+          this.toast('TikTok 下载失败：' + msg + '（解析服务可能被拦截）。已打开原视频页', 'err');
+        }
         setTimeout(() => window.open(url, '_blank'), 1200);
       }
     },

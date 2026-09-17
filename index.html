@@ -239,9 +239,9 @@ var BLOGGER_CHUNKS = 12;
                   <el-dropdown trigger="click" @command="cmd => videoAction(cmd, scope.row)" style="margin-right:4px;">
                     <el-button type="text" size="mini">下载<i class="el-icon-arrow-down el-icon--right"></i></el-button>
                     <el-dropdown-menu slot="dropdown">
-                      <el-dropdown-item command="cover">下载封面</el-dropdown-item>
-                      <el-dropdown-item command="video">下载视频</el-dropdown-item>
-                      <el-dropdown-item command="open">打开原视频</el-dropdown-item>
+                      <el-dropdown-item command="cover">下载封面（可用）</el-dropdown-item>
+                      <el-dropdown-item command="video">下载视频（仅TikTok）</el-dropdown-item>
+                      <el-dropdown-item command="open">打开原视频（可存）</el-dropdown-item>
                       <el-dropdown-item command="copy" divided>复制链接</el-dropdown-item>
                     </el-dropdown-menu>
                   </el-dropdown>
@@ -425,5 +425,5 @@ var BLOGGER_CHUNKS = 12;
 
 
 
-<div class="app-version">v2.4.0</div></body>
+<div class="app-version">v2.5.0</div></body>
 </html>
