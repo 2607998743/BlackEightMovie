@@ -12,13 +12,25 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>黑八影视监控</title>
-<link rel="stylesheet" href="libs/element-ui.css">
-<script src="libs/vue.js?v=5"></script>
-<script src="blogger_data.js?v=1789483732252"></script>
-<script src="tk_data.js?v=1789483732252"></script>
+<link rel="stylesheet" href="https://registry.npmmirror.com/element-ui/2.15.14/files/lib/theme-chalk/index.css">
+<script src="https://registry.npmmirror.com/vue/2.7.16/files/dist/vue.min.js"></script>
+<script src="blogger_data.js?v=1789485329095"></script>
+<script src="blogger_data_2.js?v=1789485329095"></script>
+<script src="blogger_data_3.js?v=1789485329095"></script>
+<script src="blogger_data_4.js?v=1789485329095"></script>
+<script src="blogger_data_5.js?v=1789485329095"></script>
+<script src="blogger_data_6.js?v=1789485329095"></script>
+<script src="blogger_data_7.js?v=1789485329095"></script>
+<script src="blogger_data_8.js?v=1789485329095"></script>
+<script src="blogger_data_9.js?v=1789485329095"></script>
+<script src="blogger_data_10.js?v=1789485329095"></script>
+<script src="blogger_data_11.js?v=1789485329095"></script>
+<script src="blogger_data_12.js?v=1789485329095"></script>
+<script>var BLOGGER_CHUNKS = 12;</script>
+<script src="tk_data.js?v=1789485329095"></script>
 <script src="monitor_history_data.js?v=1"></script>
-<script src="libs/element-ui.js?v=5"></script>
-<script src="libs/echarts.min.js?v=5"></script>
+<script src="https://registry.npmmirror.com/element-ui/2.15.14/files/lib/index.js"></script>
+<script src="https://registry.npmmirror.com/echarts/5.5.0/files/dist/echarts.min.js"></script>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body { height: 100%; font-family: "Inter", "Helvetica Neue", Helvetica, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", Arial, sans-serif; background: #f5f7fa; color: #1a1a2e; }
@@ -864,46 +876,78 @@ new Vue({
       }
       const headers = {'Authorization': 'token ' + token, 'Accept': 'application/vnd.github+json'};
       const api = 'https://api.github.com/repos/2607998743/BlackEightMovie/contents/';
-      const path = filename;
-      const newText = filename === 'blogger_data.js'
-        ? 'const BLOGGER_DATA = ' + JSON.stringify(BLOGGER_DATA) + ';'
-        : 'const TK_DATA = ' + JSON.stringify(TK_DATA) + ';';
-      const b64 = btoa(unescape(encodeURIComponent(newText)));
       const self = this;
       const ts0 = String(Date.now());
-      const doPut = function(retry) {
-        return fetch(api + path, {headers})
-          .then(r => r.json())
-          .then(meta => {
-            if (!meta.sha) throw new Error(meta.message || '无法读取线上文件');
-            const body = JSON.stringify({message: '网页删除数据 ' + new Date().toLocaleString('zh-CN', {hour12: false}), content: b64, sha: meta.sha});
-            return fetch(api + path, {method: 'PUT', headers, body}).then(r => r.json().then(j => ({status: r.status, j: j})));
-          })
-          .then(o => {
-            const j = o.j;
-            if (j.content && j.content.sha) return true;
-            if (retry < 2 && (o.status === 422 || /does not match|but expected/i.test(j.message || ''))) return doPut(retry + 1);
-            throw new Error(j.message || '提交失败');
-          });
-      };
-      return Promise.all([
-        doPut(0),
-        fetch(api + 'index.html', {headers}).then(r => r.json()).then(m2 => {
-          if (!m2 || !m2.sha) return;
-          try {
-            let html = decodeURIComponent(escape(atob(m2.content)));
-            html = html.replace(/blogger_data\.js\?v=\d+/, 'blogger_data.js?v=' + ts0).replace(/tk_data\.js\?v=\d+/, 'tk_data.js?v=' + ts0);
-            const nb = btoa(unescape(encodeURIComponent(html)));
-            return fetch(api + 'index.html', {method: 'PUT', headers, body: JSON.stringify({message: 'bump data version ' + new Date().toLocaleString('zh-CN', {hour12: false}), content: nb, sha: m2.sha})}).catch(() => ({}));
-          } catch (e) {}
-        })
-      ]).then(pair2 => {
-        if (pair2[0] === true) {
-          self.$message.success('已提交 GitHub 线上，图片同步中…');
-          return true;
+      const CHUNKS = (typeof BLOGGER_CHUNKS === 'number' && BLOGGER_CHUNKS > 0) ? BLOGGER_CHUNKS : 12;
+      const jobs = [];
+      if (filename === 'blogger_data.js') {
+        const totalBytes = JSON.stringify(BLOGGER_DATA).length;
+        const maxBytes = Math.max(Math.ceil(totalBytes / CHUNKS), 5000);
+        const chunks = [];
+        let cur = [], curSize = 0;
+        for (let bi = 0; bi < BLOGGER_DATA.length; bi++) {
+          const bs = JSON.stringify(BLOGGER_DATA[bi]).length;
+          if (cur.length && curSize + bs > maxBytes && chunks.length < CHUNKS - 1) {
+            chunks.push(cur); cur = []; curSize = 0;
+          }
+          cur.push(BLOGGER_DATA[bi]); curSize += bs;
         }
-        throw new Error('提交失败');
-      }).catch(e => { self.$message.error('同步失败：' + e.message + '（本地数据已更新，可稍后重试删除或手动同步）'); throw e; });
+        if (cur.length) chunks.push(cur);
+        while (chunks.length < CHUNKS) chunks.push([]);
+        for (let ci = 0; ci < chunks.length; ci++) {
+          jobs.push({
+            path: ci === 0 ? 'blogger_data.js' : 'blogger_data_' + (ci + 1) + '.js',
+            text: ci === 0 ? 'const BLOGGER_DATA = ' + JSON.stringify(chunks[ci]) + ';' : 'BLOGGER_DATA.push.apply(BLOGGER_DATA, ' + JSON.stringify(chunks[ci]) + ');'
+          });
+        }
+      } else {
+        jobs.push({path: filename, text: 'const TK_DATA = ' + JSON.stringify(TK_DATA) + ';'});
+      }
+      const putOne = function(path, text) {
+        const b64 = btoa(unescape(encodeURIComponent(text)));
+        const doPut = function(retry) {
+          return fetch(api + path, {headers})
+            .then(r => r.json())
+            .then(meta => {
+              if (!meta.sha) throw new Error(meta.message || '无法读取线上文件');
+              const body = JSON.stringify({message: '网页删除数据 ' + new Date().toLocaleString('zh-CN', {hour12: false}), content: b64, sha: meta.sha});
+              return fetch(api + path, {method: 'PUT', headers, body}).then(r => r.json().then(j => ({status: r.status, j: j})));
+            })
+            .then(o => {
+              const j = o.j;
+              if (j.content && j.content.sha) return true;
+              if (retry < 2 && (o.status === 422 || /does not match|but expected/i.test(j.message || ''))) return doPut(retry + 1);
+              throw new Error(j.message || '提交失败');
+            });
+        };
+        return doPut(0);
+      };
+      return Promise.all(jobs.map(function(j) { return putOne(j.path, j.text); }))
+        .then(function(results) {
+          if (!results.length || results.indexOf(true) < 0) throw new Error('提交失败');
+          return fetch(api + 'index.html', {headers}).then(r => r.json()).then(m2 => {
+            if (!m2 || !m2.sha) return true;
+            let htm = decodeURIComponent(escape(atob(m2.content)));
+            htm = htm.replace(/(?:<script src="blogger_data(?:_\d+)?\.js\?v=\d+"><\/script>\s*)+/, function() {
+              var s = '';
+              for (var ci = 0; ci < CHUNKS; ci++) {
+                s += '<script src="' + (ci === 0 ? 'blogger_data.js' : 'blogger_data_' + (ci + 1) + '.js') + '?v=' + ts0 + '"><\/script>\n';
+              }
+              return s;
+            });
+            htm = htm.replace(/tk_data\.js\?v=\d+/, 'tk_data.js?v=' + ts0);
+            const nb = btoa(unescape(encodeURIComponent(htm)));
+            return fetch(api + 'index.html', {method: 'PUT', headers, body: JSON.stringify({message: 'bump data version ' + new Date().toLocaleString('zh-CN', {hour12: false}), content: nb, sha: m2.sha})}).catch(() => ({}));
+          }).then(function() { return true; });
+        })
+        .then(function(ok) {
+          if (ok === true) {
+            self.$message.success('已提交 GitHub 线上，图片同步中…');
+            return true;
+          }
+          throw new Error('提交失败');
+        })
+        .catch(e => { self.$message.error('同步失败：' + e.message + '（本地数据已更新，可稍后重试删除或手动同步）'); throw e; });
     },
     deleteGithubFiles(paths) {
       const token = String(this.syncToken || (function(){ try { return localStorage.getItem('bb_gh_token') || ''; } catch(e){ return ''; } })()).replace(/\s+/g, '').replace(/[^\x20-\x7E]/g, '');
@@ -951,26 +995,47 @@ new Vue({
           }
         })
         .catch(function() {});
-      ['blogger_data.js', 'tk_data.js'].forEach(function(fn) {
+      var dlFiles = [];
+      for (var ci = 0; ci < (typeof BLOGGER_CHUNKS === 'number' && BLOGGER_CHUNKS > 0 ? BLOGGER_CHUNKS : 12); ci++) dlFiles.push(ci === 0 ? 'blogger_data.js' : 'blogger_data_' + (ci + 1) + '.js');
+      dlFiles.push('tk_data.js');
+      var parsed = {};
+      var pending = dlFiles.length;
+      dlFiles.forEach(function(fn) {
         fetch('https://api.github.com/repos/2607998743/BlackEightMovie/contents/' + fn, {
           headers: {'Authorization': 'token ' + token, 'Accept': 'application/vnd.github.raw'},
           cache: 'no-store'
         })
           .then(function(r) { if (!r.ok) { throw new Error('http ' + r.status); } return r.text(); })
           .then(function(txt) {
-            var m = txt.match(/(?:const|var) \\w+ = (\\[.*?\\]);/s);
-            if (!m) return;
-            var arr;
-            try { arr = JSON.parse(m[1]); } catch (e) { return; }
-            var target = (fn === 'blogger_data.js') ? BLOGGER_DATA : TK_DATA;
-            if (JSON.stringify(target) !== JSON.stringify(arr)) {
-              target.length = 0;
-              Array.prototype.push.apply(target, arr);
+            var m = txt.match(/(?:const|var) \w+ = (\[.*?\]);/s);
+            if (m) {
+              try {
+                var arr = JSON.parse(m[1]);
+                if (fn === 'tk_data.js') parsed.tk = arr;
+                else {
+                  if (!parsed.blogger) parsed.blogger = [];
+                  parsed.blogger = parsed.blogger.concat(arr);
+                }
+              } catch (e) {}
+            }
+          })
+          .catch(function() {})
+          .then(function() {
+            pending--;
+            if (pending > 0) return;
+            if (parsed.blogger && JSON.stringify(BLOGGER_DATA) !== JSON.stringify(parsed.blogger)) {
+              BLOGGER_DATA.length = 0;
+              Array.prototype.push.apply(BLOGGER_DATA, parsed.blogger);
               self.dataVersion++;
               self.$forceUpdate();
             }
-          })
-          .catch(function() {});
+            if (parsed.tk && JSON.stringify(TK_DATA) !== JSON.stringify(parsed.tk)) {
+              TK_DATA.length = 0;
+              Array.prototype.push.apply(TK_DATA, parsed.tk);
+              self.dataVersion++;
+              self.$forceUpdate();
+            }
+          });
       });
     },
     downloadText(filename, text) {
@@ -1502,5 +1567,5 @@ new Vue({
 })();
 </script>
 
-<div class="app-version">v2.1.6</div></body>
+<div class="app-version">v2.2.0</div></body>
 </html>

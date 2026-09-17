@@ -1,0 +1,1 @@
+BLOGGER_DATA.push.apply(BLOGGER_DATA, []);
