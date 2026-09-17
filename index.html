@@ -14,7 +14,7 @@
 <title>黑八影视监控</title>
 <link rel="stylesheet" href="https://registry.npmmirror.com/element-ui/2.15.14/files/lib/theme-chalk/index.css">
 <script src="https://registry.npmmirror.com/vue/2.7.16/files/dist/vue.min.js"></script>
-<script src="blogger_data.js?v=1789485329095"></script>
+<script src="blogger_data_1.js?v=1789485329095"></script>
 <script src="blogger_data_2.js?v=1789485329095"></script>
 <script src="blogger_data_3.js?v=1789485329095"></script>
 <script src="blogger_data_4.js?v=1789485329095"></script>
@@ -896,7 +896,7 @@ new Vue({
         while (chunks.length < CHUNKS) chunks.push([]);
         for (let ci = 0; ci < chunks.length; ci++) {
           jobs.push({
-            path: ci === 0 ? 'blogger_data.js' : 'blogger_data_' + (ci + 1) + '.js',
+            path: 'blogger_data_' + (ci + 1) + '.js',
             text: ci === 0 ? 'const BLOGGER_DATA = ' + JSON.stringify(chunks[ci]) + ';' : 'BLOGGER_DATA.push.apply(BLOGGER_DATA, ' + JSON.stringify(chunks[ci]) + ');'
           });
         }
@@ -928,10 +928,10 @@ new Vue({
           return fetch(api + 'index.html', {headers}).then(r => r.json()).then(m2 => {
             if (!m2 || !m2.sha) return true;
             let htm = decodeURIComponent(escape(atob(m2.content)));
-            htm = htm.replace(/(?:<script src="blogger_data(?:_\d+)?\.js\?v=\d+"><\/script>\s*)+/, function() {
+            htm = htm.replace(/(?:<script src="blogger_data_\d+\.js\?v=\d+"><\/script>\s*)+/, function() {
               var s = '';
               for (var ci = 0; ci < CHUNKS; ci++) {
-                s += '<script src="' + (ci === 0 ? 'blogger_data.js' : 'blogger_data_' + (ci + 1) + '.js') + '?v=' + ts0 + '"><\/script>\n';
+                s += '<script src="blogger_data_' + (ci + 1) + '.js?v=' + ts0 + '"><\/script>\n';
               }
               return s;
             });
@@ -996,7 +996,7 @@ new Vue({
         })
         .catch(function() {});
       var dlFiles = [];
-      for (var ci = 0; ci < (typeof BLOGGER_CHUNKS === 'number' && BLOGGER_CHUNKS > 0 ? BLOGGER_CHUNKS : 12); ci++) dlFiles.push(ci === 0 ? 'blogger_data.js' : 'blogger_data_' + (ci + 1) + '.js');
+      for (var ci = 0; ci < (typeof BLOGGER_CHUNKS === 'number' && BLOGGER_CHUNKS > 0 ? BLOGGER_CHUNKS : 12); ci++) dlFiles.push('blogger_data_' + (ci + 1) + '.js');
       dlFiles.push('tk_data.js');
       var parsed = {};
       var pending = dlFiles.length;
