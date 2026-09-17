@@ -165,7 +165,7 @@ new Vue({
         for (let ci = 0; ci < chunks.length; ci++) {
           jobs.push({
             path: 'blogger_data_' + (ci + 1) + '.js',
-            text: ci === 0 ? 'const BLOGGER_DATA = ' + JSON.stringify(chunks[ci]) + ';' : 'BLOGGER_DATA.push.apply(BLOGGER_DATA, ' + JSON.stringify(chunks[ci]) + ');'
+            text: 'window.__DY_CHUNK && window.__DY_CHUNK(' + (ci + 1) + ', ' + JSON.stringify(chunks[ci]) + ');'
           });
         }
       } else {
@@ -794,6 +794,49 @@ new Vue({
       } else fallback();
     },
 
+
+    loadChunks() {
+      const CHUNKS = (typeof BLOGGER_CHUNKS === 'number' && BLOGGER_CHUNKS > 0) ? BLOGGER_CHUNKS : 12;
+      this.__chunkBuf = new Array(CHUNKS);
+      this.__chunkNext = 0;
+      const self = this;
+      window.__DY_CHUNK = function (n, arr) { self.onChunk(n, arr); };
+      const ts = Date.now();
+      for (let i = 0; i < CHUNKS; i++) {
+        (function (ci) {
+          const s = document.createElement('script');
+          s.src = 'blogger_data_' + (ci + 1) + '.js?v=' + ts;
+          s.onerror = function () { self.onChunk(ci + 1, []); };
+          document.body.appendChild(s);
+        })(i);
+      }
+    },
+    onChunk(n, arr) {
+      if (!this.__chunkBuf) { this.__chunkBuf = new Array(12); this.__chunkNext = 0; }
+      if (n < 1 || n > this.__chunkBuf.length) return;
+      if (this.__chunkBuf[n - 1]) return;
+      this.__chunkBuf[n - 1] = arr || [];
+      this.__mergeChunks();
+    },
+    __mergeChunks() {
+      while (this.__chunkNext < this.__chunkBuf.length && this.__chunkBuf[this.__chunkNext]) {
+        const part = this.__chunkBuf[this.__chunkNext];
+        BLOGGER_DATA.push.apply(BLOGGER_DATA, part);
+        this.__chunkBuf[this.__chunkNext] = null;
+        this.__chunkNext++;
+      }
+      this.dataVersion++;
+      const el = document.getElementById('loadingMask');
+      const prog = document.getElementById('loadingProgress');
+      if (this.__chunkNext >= this.__chunkBuf.length) {
+        if (el) el.style.display = 'none';
+      } else if (this.__chunkNext >= 1) {
+        if (el) el.style.display = 'none';
+      } else {
+        if (prog) prog.textContent = '数据加载中 ' + this.__chunkNext + '/' + this.__chunkBuf.length;
+      }
+    },
+
     toast(msg, type) {
       let el = document.getElementById('sync-toast');
       if (!el) {
@@ -811,6 +854,7 @@ new Vue({
   },
   mounted() {
     this.applyNameOverrides();
+    this.loadChunks();
     this.checkLatest();
     setInterval(() => { this.checkLatest(); }, 60000);
     let saved = '';

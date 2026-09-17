@@ -1,1 +1,1 @@
-BLOGGER_DATA.push.apply(BLOGGER_DATA, []);
+window.__DY_CHUNK && window.__DY_CHUNK(12, []);
