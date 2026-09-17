@@ -708,6 +708,92 @@ new Vue({
         this.toast('同步失败：' + (e && e.message ? e.message : '网络错误'), 'err');
       });
     },
+
+    videoAction(cmd, row) {
+      if (cmd === 'cover') return this.downloadCover(row);
+      if (cmd === 'video') return this.downloadVideo(row);
+      if (cmd === 'open') { window.open(row.url, '_blank'); return; }
+      if (cmd === 'copy') this.copyText(row.url);
+    },
+    async downloadCover(row) {
+      const url = row.cover;
+      if (!url) { this.toast('该视频没有封面', 'err'); return; }
+      try {
+        const resp = await fetch(url);
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        const blob = await resp.blob();
+        const base = ((row.blogger || '') + '_' + (row.movie_name || row.video_id || 'video')).replace(/[\\/:*?"<>|\s]+/g, '_').slice(0, 60);
+        this.saveBlob(blob, base + '.jpg');
+        this.toast('封面开始下载', 'ok');
+      } catch (e) {
+        window.open(url, '_blank');
+        this.toast('封面直下受限，已在新窗口打开，可在图片上右键保存', 'err');
+      }
+    },
+    async downloadVideo(row) {
+      const url = row.url || '';
+      if (/tiktok\.com/i.test(url) || row.platform === 'tk') {
+        return this.parseTikTok(url);
+      }
+      if (/douyin\.com/.test(url)) {
+        this.toast('抖音视频需要签名，网页端无法直下；已为你打开原视频页（可下载或转存）', 'err');
+        setTimeout(() => window.open(url, '_blank'), 1200);
+        return;
+      }
+      this.toast('无法识别视频来源', 'err');
+    },
+    async parseTikTok(url) {
+      if (!/^https?:\/\//.test(url)) { this.toast('链接格式不对，请粘贴完整 TikTok 视频链接', 'err'); return; }
+      this.toast('正在解析 TikTok 视频…', 'ok');
+      try {
+        const body = new URLSearchParams();
+        body.append('url', url);
+        const resp = await fetch('https://www.tikwm.com/api/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: body.toString()
+        });
+        const d = await resp.json();
+        if (!d || d.code !== 0 || !d.data) throw new Error((d && d.msg) || '解析失败');
+        const v = d.data;
+        if (!v.play) throw new Error('未获取到播放地址');
+        const title = (v.title || 'tiktok_video').replace(/[\\/:*?"<>|\s]+/g, '_').slice(0, 60);
+        this.toast('解析成功，开始下载无水印视频…', 'ok');
+        const r = await fetch(v.play);
+        if (!r.ok) throw new Error('视频下载失败 HTTP ' + r.status);
+        const blob = await r.blob();
+        this.saveBlob(blob, title + '.mp4');
+        this.toast('视频已开始下载', 'ok');
+      } catch (e) {
+        this.toast('TikTok 解析失败：' + e.message + '，已打开原视频页', 'err');
+        setTimeout(() => window.open(url, '_blank'), 1200);
+      }
+    },
+    saveBlob(blob, filename) {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => { URL.revokeObjectURL(a.href); if (a.parentNode) a.parentNode.removeChild(a); }, 1500);
+    },
+    copyText(txt) {
+      const done = () => this.toast('链接已复制', 'ok');
+      const fallback = () => {
+        const ta = document.createElement('textarea');
+        ta.value = txt;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand('copy'); this.toast('链接已复制', 'ok'); } catch (e) { this.toast('复制失败，请手动复制', 'err'); }
+        ta.remove();
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(txt).then(done, fallback);
+      } else fallback();
+    },
+
     toast(msg, type) {
       let el = document.getElementById('sync-toast');
       if (!el) {

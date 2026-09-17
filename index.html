@@ -245,8 +245,17 @@ var BLOGGER_CHUNKS = 12;
                   <el-tag v-else type="info" size="mini">普通</el-tag>
                 </template>
               </el-table-column>
-              <el-table-column label="操作" width="70" align="center">
+              <el-table-column label="操作" width="150" align="center">
                 <template slot-scope="scope">
+                  <el-dropdown trigger="click" @command="cmd => videoAction(cmd, scope.row)" style="margin-right:4px;">
+                    <el-button type="text" size="mini">下载<i class="el-icon-arrow-down el-icon--right"></i></el-button>
+                    <el-dropdown-menu slot="dropdown">
+                      <el-dropdown-item command="cover">下载封面</el-dropdown-item>
+                      <el-dropdown-item command="video">下载视频</el-dropdown-item>
+                      <el-dropdown-item command="open">打开原视频</el-dropdown-item>
+                      <el-dropdown-item command="copy" divided>复制链接</el-dropdown-item>
+                    </el-dropdown-menu>
+                  </el-dropdown>
                   <el-button type="text" class="video-del-btn" @click="deleteVideo(scope.row)">删除</el-button>
                 </template>
               </el-table-column>
@@ -350,6 +359,11 @@ var BLOGGER_CHUNKS = 12;
                   <el-tag v-else type="info" size="mini">普通</el-tag>
                 </template>
               </el-table-column>
+              <el-table-column label="操作" width="80" align="center">
+                <template slot-scope="scope">
+                  <el-button type="text" size="mini" @click="videoAction('video', scope.row)">下载</el-button>
+                </template>
+              </el-table-column>
             </el-table>
           </div>
         </div>
@@ -420,7 +434,7 @@ var BLOGGER_CHUNKS = 12;
   <div class="monitor-body history-body" id="historyBody"></div>
 </div>
 
-<script src="app_extra.js?v=1"></script>
 
-<div class="app-version">v2.2.0</div></body>
+
+<div class="app-version">v2.3.0</div></body>
 </html>
