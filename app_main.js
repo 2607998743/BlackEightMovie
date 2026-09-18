@@ -416,6 +416,7 @@ new Vue({
       this.filterCountry = '';
       this.$nextTick(() => {
         this.renderPie();
+        if (this..videoTable) { this..videoTable.store.commit('setData', this.filteredVideos); this..videoTable.doLayout(); }
       });
     },
     parseAndSearch() {
