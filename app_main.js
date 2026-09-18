@@ -1,4 +1,4 @@
-﻿
+
 // 数据从外部文件加载
 
 new Vue({
@@ -410,7 +410,7 @@ new Vue({
       }
     },
     selectBlogger(b) {
-      this.currentBlogger = b;
+      this.currentBlogger = JSON.parse(JSON.stringify(b));
       this.activeMenu = (b.platform === 'tk') ? 'tiktok' : 'douyin';
       this.filterType = '';
       this.filterCountry = '';
