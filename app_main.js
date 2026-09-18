@@ -1,4 +1,4 @@
-
+﻿
 // 数据从外部文件加载
 
 new Vue({
@@ -13,6 +13,7 @@ new Vue({
       countryPieChart: null,
       sortDesc: false,
       coverDialogVisible: false,
+    batchDownloading: false,
       currentCover: '',
       filterVisible: false,
       filterType: '',
