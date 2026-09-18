@@ -26,8 +26,8 @@ var BLOGGER_CHUNKS = 12;
 <script src="monitor_history_data.js?v=1"></script>
 <script src="https://registry.npmmirror.com/element-ui/2.15.14/files/lib/index.js"></script>
 <script src="https://registry.npmmirror.com/echarts/5.5.0/files/dist/echarts.min.js"></script>
-<link rel="stylesheet" href="app_style_base.css?v=1789741130942">
-<link rel="stylesheet" href="app_style_main.css?v=1789741130942">
+<link rel="stylesheet" href="app_style_base.css?v=1789741450163">
+<link rel="stylesheet" href="app_style_main.css?v=1789741450163">
 </head>
 <body>
 <div id="loadingMask" style="position:fixed;inset:0;background:#0b1020;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;">
@@ -192,7 +192,7 @@ var BLOGGER_CHUNKS = 12;
                 </el-popover>
               </div>
             </div>
-            <el-table :data="filteredVideos" stripe style="width: 100%" max-height="500">
+            <el-table :key="(currentBlogger?currentBlogger.name:')+'_'+filteredVideos.length" :data="filteredVideos" stripe style="width: 100%" max-height="500">
               <el-table-column type="index" label="#" width="50" align="center"></el-table-column>
               <el-table-column label="封面" width="70" align="center">
                 <template slot-scope="scope">
@@ -408,9 +408,9 @@ var BLOGGER_CHUNKS = 12;
   </div>
 </div>
 
-<script src="app_main.js?v=1789741130942"></script>
+<script src="app_main.js?v=1789741450163"></script>
 
-<script src="app_extra.js?v=1789741130942"></script>
+<script src="app_extra.js?v=1789741450163"></script>
 
 
 <!-- 抓取历史报告面板 -->
