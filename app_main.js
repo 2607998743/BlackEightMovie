@@ -16,7 +16,7 @@ new Vue({
       currentCover: '',
       filterVisible: false,
       filterType: '',
-      filterCountry: '美国',
+      filterCountry: '',
       searchDialogVisible: false,
       searchMonth: '',
       searchCountry: '',
@@ -413,7 +413,7 @@ new Vue({
       this.currentBlogger = b;
       this.activeMenu = (b.platform === 'tk') ? 'tiktok' : 'douyin';
       this.filterType = '';
-      this.filterCountry = '美国';
+      this.filterCountry = '';
       this.$nextTick(() => {
         this.renderPie();
       });
