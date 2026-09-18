@@ -8,7 +8,7 @@ new Vue({
       activeMenu: 'douyin',
       tkBloggers: TK_DATA,
       searchText: '',
-      currentBlogger: {name: '', analysis: {text: ''}, style: [], country_dist: [], videos: []},
+      currentBlogger: {name: '', platform: '', analysis: {text: ''}, style: [], country_dist: [], videos: []},
       pieChart: null,
       countryPieChart: null,
       sortDesc: false,
