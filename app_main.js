@@ -413,6 +413,7 @@ new Vue({
       this.currentBlogger = JSON.parse(JSON.stringify(b));
       this.activeMenu = (b.platform === 'tk') ? 'tiktok' : 'douyin';
       this.filterType = '';
+      this.showTkBatchBtn = (b.platform === 'tk');
       this.filterCountry = '';
       this.$nextTick(() => {
         this.renderPie();
