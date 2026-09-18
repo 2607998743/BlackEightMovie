@@ -1,4 +1,4 @@
-
+﻿
 // 数据从外部文件加载
 
 new Vue({
@@ -787,6 +787,45 @@ new Vue({
         }
         setTimeout(() => window.open(url, '_blank'), 1200);
       }
+    },
+    async batchDownloadTk() {
+      if (this.batchDownloading) return;
+      const vids = this.filteredVideos || (this.currentBlogger && this.currentBlogger.videos) || [];
+      const tkVids = vids.filter(v => v.url && /tiktok\.com/i.test(v.url));
+      if (!tkVids.length) { this.toast('当前没有可下载的 TK 视频', 'err'); return; }
+      try {
+        await this.$confirm('将批量下载 ' + tkVids.length + ' 个视频，按 1.mp4、2.mp4… 顺序命名。浏览器首次可能弹出"允许多文件下载"提示，请点允许。', '批量下载', { confirmButtonText: '开始下载', cancelButtonText: '取消', type: 'info' });
+      } catch(e) { return; }
+      this.batchDownloading = true;
+      let ok = 0, fail = 0;
+      for (let i = 0; i < tkVids.length; i++) {
+        const row = tkVids[i];
+        const n = i + 1;
+        try {
+          this.toast('[' + n + '/' + tkVids.length + '] 解析中…', 'ok');
+          const body = new URLSearchParams();
+          body.append('url', row.url);
+          const resp = await fetch('https://www.tikwm.com/api/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: body.toString()
+          });
+          const d = await resp.json();
+          if (!d || d.code !== 0 || !d.data || !d.data.play) throw new Error((d && d.msg) || '解析失败');
+          const r = await fetch(d.data.play);
+          if (!r.ok) throw new Error('HTTP ' + r.status);
+          const blob = await r.blob();
+          this.saveBlob(blob, n + '.mp4');
+          ok++;
+          this.toast('[' + n + '/' + tkVids.length + '] 已保存 ' + n + '.mp4', 'ok');
+        } catch (e) {
+          fail++;
+          this.toast('[' + n + '/' + tkVids.length + '] 失败: ' + String(e.message || e).slice(0, 40), 'err');
+        }
+        if (i < tkVids.length - 1) await new Promise(r => setTimeout(r, 1500));
+      }
+      this.batchDownloading = false;
+      this.toast('批量下载完成：成功 ' + ok + '，失败 ' + fail, fail ? 'err' : 'ok');
     },
     saveBlob(blob, filename) {
       const a = document.createElement('a');

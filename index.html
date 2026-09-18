@@ -164,6 +164,9 @@ var BLOGGER_CHUNKS = 12;
             <div class="card-header">
               <div class="card-title">视频数据列表 ({{ filteredVideos.length }} 条)</div>
               <div class="card-action">
+                <el-button v-if="currentBlogger.platform === 'tk'" size="mini" type="primary" @click="batchDownloadTk" :loading="batchDownloading" style="margin-right:8px;">
+                  {{ batchDownloading ? '下载中…' : '批量下载全部视频' }}
+                </el-button>
                 <el-popover placement="bottom-end" width="280" trigger="click" v-model="filterVisible">
                   <div class="filter-panel">
                     <div class="filter-row">
@@ -425,5 +428,5 @@ var BLOGGER_CHUNKS = 12;
 
 
 
-<div class="app-version">v2.5.0</div></body>
+<div class="app-version">v2.6.0</div></body>
 </html>
