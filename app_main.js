@@ -416,7 +416,7 @@ new Vue({
       this.filterCountry = '';
       this.$nextTick(() => {
         this.renderPie();
-        if (this..videoTable) { this..videoTable.store.commit('setData', this.filteredVideos); this..videoTable.doLayout(); }
+        setTimeout(() => { var _tel = document.querySelector('.table-card .el-table'); if (_tel && _tel.__vue__) { _tel.__vue__.store.commit('setData', this.filteredVideos); _tel.__vue__.doLayout(); } }, 100);
       });
     },
     parseAndSearch() {
