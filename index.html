@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <script>
@@ -26,8 +26,8 @@ var BLOGGER_CHUNKS = 12;
 <script src="monitor_history_data.js?v=1"></script>
 <script src="https://registry.npmmirror.com/element-ui/2.15.14/files/lib/index.js"></script>
 <script src="https://registry.npmmirror.com/echarts/5.5.0/files/dist/echarts.min.js"></script>
-<link rel="stylesheet" href="app_style_base.css?v=1789741688016">
-<link rel="stylesheet" href="app_style_main.css?v=1789741688016">
+<link rel="stylesheet" href="app_style_base.css?v=1789745396537">
+<link rel="stylesheet" href="app_style_main.css?v=1789745396537">
 </head>
 <body>
 <div id="loadingMask" style="position:fixed;inset:0;background:#0b1020;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;">
@@ -376,6 +376,12 @@ var BLOGGER_CHUNKS = 12;
         </div>
         <div style="margin-top:14px;text-align:right;">
           <el-button size="mini" @click="testGithubToken">测试连接</el-button>
+        <div style="margin-top:18px;padding-top:14px;border-top:1px solid #e5e7eb;">
+          <div style="font-size:13px;font-weight:600;color:#111827;margin-bottom:8px;">下载保存位置</div>
+          <div style="font-size:12px;color:#6b7280;margin-bottom:8px;line-height:1.6;">设置后，批量下载/单视频下载/封面都会直接存到该文件夹，不再每次弹另存为。</div>
+          <el-button size="mini" @click="pickDownloadDir">选择文件夹</el-button>
+          <span v-if="downloadDirName" style="margin-left:10px;font-size:12px;color:#16a34a;">当前：{{ downloadDirName }}</span>
+        </div>
           <el-button size="mini" type="primary" @click="saveSyncToken">保存</el-button>
         </div>
       </el-dialog>
@@ -408,7 +414,7 @@ var BLOGGER_CHUNKS = 12;
   </div>
 </div>
 
-<script src="app_main.js?v=1789743082957"></script>
+<script src="app_main.js?v=1789745396537"></script>
 
 <script src="app_extra.js?v=1789741688016"></script>
 

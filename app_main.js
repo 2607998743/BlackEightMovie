@@ -14,6 +14,8 @@ new Vue({
       sortDesc: false,
       coverDialogVisible: false,
     batchDownloading: false,
+    dirHandle: null,
+    downloadDirName: '',
       currentCover: '',
       filterVisible: false,
       filterType: '',
@@ -371,6 +373,7 @@ new Vue({
         try { localStorage.setItem('bb_login_role', 'admin'); } catch (e) {}
         this.loginError = '';
         this.initByRole();
+    this.loadDirHandle().then(h => { this.dirHandle = h; if (h) this.downloadDirName = h.name; });
       } else {
         this.loginError = '账号或密码错误，请重试';
       }
@@ -830,13 +833,64 @@ new Vue({
       this.batchDownloading = false;
       this.toast('批量下载完成：成功 ' + ok + '，失败 ' + fail, fail ? 'err' : 'ok');
     },
-    saveBlob(blob, filename) {
+    async saveBlob(blob, filename) {
+      try {
+        if (this.dirHandle) {
+          const fh = await this.dirHandle.getFileHandle(filename, {create: true});
+          const w = await fh.createWritable();
+          await w.write(blob);
+          await w.close();
+          return;
+        }
+      } catch(e) { console.warn('dirHandle write fail', e); }
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
       a.download = filename;
       document.body.appendChild(a);
       a.click();
       setTimeout(() => { URL.revokeObjectURL(a.href); if (a.parentNode) a.parentNode.removeChild(a); }, 1500);
+    },
+    async loadDirHandle() {
+      return new Promise(resolve => {
+        try {
+          const req = indexedDB.open('black8_dl', 1);
+          req.onupgradeneeded = () => req.result.createObjectStore('kv');
+          req.onsuccess = () => {
+            const db = req.result;
+            const tx = db.transaction('kv', 'readonly');
+            const g = tx.objectStore('kv').get('dirHandle');
+            g.onsuccess = () => resolve(g.result || null);
+            g.onerror = () => resolve(null);
+          };
+          req.onerror = () => resolve(null);
+        } catch(e) { resolve(null); }
+      });
+    },
+    async saveDirHandle(handle) {
+      return new Promise(resolve => {
+        try {
+          const req = indexedDB.open('black8_dl', 1);
+          req.onupgradeneeded = () => req.result.createObjectStore('kv');
+          req.onsuccess = () => {
+            const db = req.result;
+            const tx = db.transaction('kv', 'readwrite');
+            tx.objectStore('kv').put(handle, 'dirHandle');
+            tx.oncomplete = () => resolve(true);
+            tx.onerror = () => resolve(false);
+          };
+          req.onerror = () => resolve(false);
+        } catch(e) { resolve(false); }
+      });
+    },
+    async pickDownloadDir() {
+      if (!window.showDirectoryPicker) { this.$message.error('请用 Chrome/Edge 最新版'); return; }
+      try {
+        const handle = await window.showDirectoryPicker({id: 'black8_download', mode: 'readwrite'});
+        this.dirHandle = handle;
+        this.downloadDirName = handle.name;
+        await this.saveDirHandle(handle);
+        this.$message.success('下载文件夹已设为：' + handle.name);
+      } catch(e) { if (e && e.name === 'AbortError') return; this.$message.error('选择失败: ' + (e.message||e)); }
     },
     copyText(txt) {
       const done = () => this.toast('链接已复制', 'ok');
