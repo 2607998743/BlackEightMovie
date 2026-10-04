@@ -1,4 +1,4 @@
-const MONITOR_HISTORY = [
+[
  {
   "time": "2026-09-03 13:53:17",
   "old_new_count": 13,
@@ -142,6 +142,16 @@ const MONITOR_HISTORY = [
   "note": "距上次采集 2.2 天（约53.1小时），未满 3 天，本次跳过"
  },
  {
+  "time": "2026-09-18 13:14:40",
+  "old_new_count": 1,
+  "new_bloggers": [
+   "墨客影视"
+  ],
+  "fails": [],
+  "source": "定时任务-每日补全",
+  "note": "新关注44位中筛出影视候选1位（墨客影视），bu浏览器全量采集814个视频、605条万赞收录；规则库+封面AI识别686部影片"
+ },
+ {
   "time": "2026-09-19 00:10:35",
   "action": "skip",
   "note": "距上次采集 0.5 天（约10.9小时），未满 3 天，本次跳过"
@@ -269,4 +279,4 @@ const MONITOR_HISTORY = [
   "fails": [],
   "source": "tiktok search+detail"
  }
-];
+]
