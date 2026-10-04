@@ -278,5 +278,22 @@
   ],
   "fails": [],
   "source": "tiktok search+detail"
+ },
+ {
+  "time": "2026-10-04 20:10:59",
+  "action": "tk_collect",
+  "note": "TikTok 采集：新增7个影视博主（re.gaddtrdf/dyg5672/user8112185880146/eiuj74/duhh6770/movietales66/bob808796），万赞视频15条（最高231.1K），影片识别15/15完成（Upgraded升舱巧遇×7/黑道家族×3/全美明星×2/我配不上她/杀人蜂/漫威剪辑），封面15张+头像7个已下载",
+  "old_new_count": "1->8",
+  "new_bloggers": [
+   "re.gaddtrdf",
+   "dyg5672",
+   "user8112185880146",
+   "eiuj74",
+   "duhh6770",
+   "movietales66",
+   "bob808796"
+  ],
+  "fails": [],
+  "source": "tiktok profile+detail"
  }
 ]
