@@ -526,7 +526,7 @@ new Vue({
       this.searchRan = false;
     },
     playsRank(p) {
-      const s = (p || '0').replace(/[ ,]/g, '');
+      const s = String(p || '0').replace(/[ ,]/g, '');
       const m = s.match(/^([\d.]+)([KMB]?)$/);
       let v = 0;
       if (m) { v = parseFloat(m[1]) * ({K: 1e3, M: 1e6, B: 1e9}[m[2]] || 1); }
