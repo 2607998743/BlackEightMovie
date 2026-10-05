@@ -367,15 +367,35 @@ new Vue({
         this.$message({type: 'success', message: '已删除该视频，正在提交 GitHub 线上…'});
       }).catch(function() {});
     },
-    doLogin() {
-      if (this.loginUser === 'root' && this.loginPass === 'c87311923') {
+    async doLogin() {
+      const isLocal = location.protocol === 'file:' || location.hostname === '127.0.0.1' || location.hostname === 'localhost';
+      if (isLocal) {
         this.loginRole = 'admin';
         try { localStorage.setItem('bb_login_role', 'admin'); } catch (e) {}
         this.loginError = '';
         this.initByRole();
-    this.loadDirHandle().then(h => { this.dirHandle = h; if (h) this.downloadDirName = h.name; });
-      } else {
+        this.loadDirHandle().then(h => { this.dirHandle = h; if (h) this.downloadDirName = h.name; });
+        return;
+      }
+      if (this.loginUser !== 'root') {
         this.loginError = '账号或密码错误，请重试';
+        return;
+      }
+      try {
+        const enc = new TextEncoder().encode(this.loginPass);
+        const buf = await crypto.subtle.digest('SHA-256', enc);
+        const hashHex = Array.from(new Uint8Array(buf)).map(b => b.toString('16').padStart(2, '0')).join('');
+        if (hashHex === '299c809eee7f54de6af8f639593d05ae3016a44965a09a3c28eb0262ea354899') {
+          this.loginRole = 'admin';
+          try { localStorage.setItem('bb_login_role', 'admin'); } catch (e) {}
+          this.loginError = '';
+          this.initByRole();
+          this.loadDirHandle().then(h => { this.dirHandle = h; if (h) this.downloadDirName = h.name; });
+        } else {
+          this.loginError = '账号或密码错误，请重试';
+        }
+      } catch (e) {
+        this.loginError = '登录校验失败，请重试';
       }
     },
     guestLogin() {
