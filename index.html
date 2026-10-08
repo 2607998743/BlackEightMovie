@@ -493,6 +493,8 @@
             <div class="card-header">
               <div class="card-title">视频数据列表 ({{ filteredVideos.length }} 条)</div>
               <div class="card-action">
+                <el-button v-if="showTkBatchBtn" size="mini" type="primary" :loading="batchDownloading" @click="batchDownloadTk" style="margin-right:8px;">批量下载全部视频</el-button>
+                <el-button v-if="showTkBatchBtn" size="mini" @click="pickDownloadDir" style="margin-right:8px;">{{ downloadDirName ? '保存到:'+downloadDirName : '选择保存文件夹' }}</el-button>
                 <el-popover placement="bottom-end" width="280" trigger="click" v-model="filterVisible">
                   <div class="filter-panel">
                     <div class="filter-row">
@@ -743,6 +745,10 @@ new Vue({
       sortDesc: false,
       coverDialogVisible: false,
       currentCover: '',
+      batchDownloading: false,
+      dirHandle: null,
+      downloadDirName: '',
+      showTkBatchBtn: false,
       filterVisible: false,
       filterType: '',
       filterCountry: '美国',
@@ -1040,31 +1046,160 @@ new Vue({
         this.$message({type: 'success', message: '已删除该视频，正在提交 GitHub 线上…'});
       }).catch(function() {});
     },
-    downloadVideo(v) {
-      var self = this;
-      var url = v.url || '';
-      if (!url) { this.$message.warning('该条视频没有链接'); return; }
-      var copyDone = function() {
-        self.$message({type: 'success', message: '视频链接已复制，可粘贴到下载工具下载原视频', duration: 4000});
-      };
+    async downloadVideo(row) {
+      const url = row.url || '';
+      if (!url) { this.toast('该视频没有链接', 'err'); return; }
+      if (/tiktok\.com/i.test(url) || row.platform === 'tk' || (this.currentBlogger && this.currentBlogger.platform === 'tk')) {
+        return this.parseTikTok(url);
+      }
+      if (/douyin\.com/.test(url)) {
+        this.toast('抖音视频受签名保护，网页端无法直下（已打开原页，可用App保存或复制链接到F2下载）', 'err');
+        this.copyText(url);
+        setTimeout(() => window.open(url, '_blank'), 1200);
+        return;
+      }
+      this.toast('无法识别视频来源', 'err');
+    },
+    async parseTikTok(url) {
+      if (!/^https?:\/\//.test(url)) { this.toast('链接格式不对', 'err'); return; }
+      this.toast('正在解析 TikTok 视频…', 'ok');
+      try {
+        const body = new URLSearchParams();
+        body.append('url', url);
+        const resp = await fetch('https://www.tikwm.com/api/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: body.toString()
+        });
+        const d = await resp.json();
+        if (!d || d.code !== 0 || !d.data) throw new Error((d && d.msg) || '解析失败');
+        const v = d.data;
+        if (!v.play) throw new Error('未获取到播放地址');
+        const title = (v.title || 'tiktok_video').replace(/[\\/:*?"<>|\s]+/g, '_').slice(0, 60);
+        this.toast('解析成功，正在下载…', 'ok');
+        const r = await fetch(v.play);
+        if (!r.ok) throw new Error('视频下载失败 HTTP ' + r.status);
+        const blob = await r.blob();
+        this.saveBlob(blob, title + '.mp4');
+        this.toast('视频已保存（浏览器下载栏查看）', 'ok');
+      } catch (e) {
+        const msg = String(e.message || e);
+        if (/Failed to fetch|NetworkError|TypeError/.test(msg)) {
+          this.toast('TikTok 下载失败：播放地址在当前网络不可达（需挂代理）。已打开原页', 'err');
+        } else {
+          this.toast('TikTok 下载失败：' + msg, 'err');
+        }
+        setTimeout(() => window.open(url, '_blank'), 1200);
+      }
+    },
+    async batchDownloadTk() {
+      if (this.batchDownloading) return;
+      const vids = this.filteredVideos || (this.currentBlogger && this.currentBlogger.videos) || [];
+      const tkVids = vids.filter(v => v.url && /tiktok\.com/i.test(v.url));
+      if (!tkVids.length) { this.toast('当前没有可下载的 TK 视频', 'err'); return; }
+      try {
+        await this.$confirm('将批量下载 ' + tkVids.length + ' 个视频，按 1.mp4、2.mp4… 命名。浏览器首次可能弹出"允许多文件下载"，请点允许。', '批量下载', { confirmButtonText: '开始下载', cancelButtonText: '取消', type: 'info' });
+      } catch(e) { return; }
+      this.batchDownloading = true;
+      let ok = 0, fail = 0;
+      for (let i = 0; i < tkVids.length; i++) {
+        const row = tkVids[i];
+        const n = i + 1;
+        try {
+          this.toast('[' + n + '/' + tkVids.length + '] 解析中…', 'ok');
+          const body = new URLSearchParams();
+          body.append('url', row.url);
+          const resp = await fetch('https://www.tikwm.com/api/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: body.toString()
+          });
+          const d = await resp.json();
+          if (!d || d.code !== 0 || !d.data || !d.data.play) throw new Error((d && d.msg) || '解析失败');
+          const r = await fetch(d.data.play);
+          if (!r.ok) throw new Error('HTTP ' + r.status);
+          const blob = await r.blob();
+          this.saveBlob(blob, n + '.mp4');
+          ok++;
+          this.toast('[' + n + '/' + tkVids.length + '] 已保存 ' + n + '.mp4', 'ok');
+        } catch (e) {
+          fail++;
+          this.toast('[' + n + '/' + tkVids.length + '] 失败: ' + String(e.message || e).slice(0, 40), 'err');
+        }
+        if (i < tkVids.length - 1) await new Promise(r => setTimeout(r, 1500));
+      }
+      this.batchDownloading = false;
+      this.toast('批量下载完成：成功 ' + ok + '，失败 ' + fail, fail ? 'err' : 'ok');
+    },
+    async saveBlob(blob, filename) {
+      try {
+        if (this.dirHandle) {
+          const fh = await this.dirHandle.getFileHandle(filename, {create: true});
+          const w = await fh.createWritable();
+          await w.write(blob);
+          await w.close();
+          return;
+        }
+      } catch(e) { console.warn('dirHandle write fail', e); }
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => { URL.revokeObjectURL(a.href); if (a.parentNode) a.parentNode.removeChild(a); }, 1500);
+    },
+    async loadDirHandle() {
+      return new Promise(resolve => {
+        try {
+          const req = indexedDB.open('black8_dl', 1);
+          req.onupgradeneeded = () => req.result.createObjectStore('kv');
+          req.onsuccess = () => {
+            const db = req.result;
+            const tx = db.transaction('kv', 'readonly');
+            const g = tx.objectStore('kv').get('dirHandle');
+            g.onsuccess = () => resolve(g.result || null);
+            g.onerror = () => resolve(null);
+          };
+          req.onerror = () => resolve(null);
+        } catch(e) { resolve(null); }
+      });
+    },
+    async saveDirHandle(handle) {
+      return new Promise(resolve => {
+        try {
+          const req = indexedDB.open('black8_dl', 1);
+          req.onupgradeneeded = () => req.result.createObjectStore('kv');
+          req.onsuccess = () => {
+            const db = req.result;
+            const tx = db.transaction('kv', 'readwrite');
+            tx.objectStore('kv').put(handle, 'dirHandle');
+            tx.oncomplete = () => resolve(true);
+            tx.onerror = () => resolve(false);
+          };
+          req.onerror = () => resolve(false);
+        } catch(e) { resolve(false); }
+      });
+    },
+    async pickDownloadDir() {
+      if (!window.showDirectoryPicker) { this.$message.error('请用 Chrome/Edge 最新版选择文件夹'); return; }
+      try {
+        const handle = await window.showDirectoryPicker({id: 'black8_download', mode: 'readwrite'});
+        this.dirHandle = handle;
+        this.downloadDirName = handle.name;
+        await this.saveDirHandle(handle);
+        this.$message.success('下载文件夹已设为：' + handle.name);
+      } catch(e) { if (e && e.name === 'AbortError') return; this.$message.error('选择失败: ' + (e.message||e)); }
+    },
+    copyText(txt) {
+      const done = () => this.toast('链接已复制', 'ok');
       if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(url).then(copyDone, function() {
-          try {
-            var ta = document.createElement('textarea');
-            ta.value = url; ta.style.position = 'fixed'; ta.style.opacity = '0';
-            document.body.appendChild(ta); ta.select();
-            document.execCommand('copy'); document.body.removeChild(ta);
-          } catch(e) {}
-          copyDone();
+        navigator.clipboard.writeText(txt).then(done, () => {
+          try { const ta = document.createElement('textarea'); ta.value = txt; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); } catch(e) {}
+          done();
         });
       } else {
-        try {
-          var ta = document.createElement('textarea');
-          ta.value = url; ta.style.position = 'fixed'; ta.style.opacity = '0';
-          document.body.appendChild(ta); ta.select();
-          document.execCommand('copy'); document.body.removeChild(ta);
-        } catch(e) {}
-        copyDone();
+        try { const ta = document.createElement('textarea'); ta.value = txt; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); } catch(e) {}
+        done();
       }
     },
     doLogin() {
@@ -1113,10 +1248,11 @@ new Vue({
       }
     },
     selectBlogger(b) {
-      this.currentBlogger = b;
+      this.currentBlogger = JSON.parse(JSON.stringify(b));
       this.activeMenu = (b.platform === 'tk') ? 'tiktok' : 'douyin';
       this.filterType = '';
       this.filterCountry = '美国';
+      this.showTkBatchBtn = (b.platform === 'tk');
       this.$nextTick(() => {
         this.renderPie();
       });
@@ -1444,6 +1580,7 @@ new Vue({
     try { saved = localStorage.getItem('bb_login_role') || ''; } catch (e) {}
     this.loginRole = (saved === 'admin' || saved === 'guest') ? saved : '';
     this.initByRole();
+    this.loadDirHandle().then(h => { this.dirHandle = h; if (h) this.downloadDirName = h.name; });
     window.addEventListener('resize', () => {
       if (this.pieChart) this.pieChart.resize();
       if (this.countryPieChart) this.countryPieChart.resize();
