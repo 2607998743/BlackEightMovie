@@ -55,6 +55,8 @@
   .blogger-del-btn { opacity: .55; width: 22px; height: 22px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; border-radius: 6px; color: #9ca3af; cursor: pointer; transition: all .15s; margin-left: 4px; }
   .blogger-del-btn:hover { background: #fee2e2; color: #ef4444; opacity: 1; }
   .video-del-btn { color: #ef4444; }
+  .video-dl-btn { color: #4f7cff; margin-right: 10px; }
+  .video-dl-btn:hover { color: #3b5bdb; }
 
   .sidebar-footer { padding: 16px 12px; border-top: 1px solid #f0f2f5; margin-top: 12px; }
   .upgrade-card { background: linear-gradient(135deg, #1e3a8a 0%, #3b5bdb 100%); border-radius: 14px; padding: 16px; color: #fff; }
@@ -567,8 +569,9 @@
                   <el-tag v-else type="info" size="mini">普通</el-tag>
                 </template>
               </el-table-column>
-              <el-table-column label="操作" width="70" align="center">
+              <el-table-column label="操作" width="120" align="center">
                 <template slot-scope="scope">
+                  <el-button type="text" class="video-dl-btn" @click="downloadVideo(scope.row)">下载</el-button>
                   <el-button type="text" class="video-del-btn" @click="deleteVideo(scope.row)">删除</el-button>
                 </template>
               </el-table-column>
@@ -1036,6 +1039,33 @@ new Vue({
         this.githubPush(dataFile).then(function() { try { history.replaceState(null, '', location.pathname + '?t=' + Date.now()); } catch(e) {} self.deleteGithubFiles(files); }).catch(function() {});
         this.$message({type: 'success', message: '已删除该视频，正在提交 GitHub 线上…'});
       }).catch(function() {});
+    },
+    downloadVideo(v) {
+      var self = this;
+      var url = v.url || '';
+      if (!url) { this.$message.warning('该条视频没有链接'); return; }
+      var copyDone = function() {
+        self.$message({type: 'success', message: '视频链接已复制，可粘贴到下载工具下载原视频', duration: 4000});
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(url).then(copyDone, function() {
+          try {
+            var ta = document.createElement('textarea');
+            ta.value = url; ta.style.position = 'fixed'; ta.style.opacity = '0';
+            document.body.appendChild(ta); ta.select();
+            document.execCommand('copy'); document.body.removeChild(ta);
+          } catch(e) {}
+          copyDone();
+        });
+      } else {
+        try {
+          var ta = document.createElement('textarea');
+          ta.value = url; ta.style.position = 'fixed'; ta.style.opacity = '0';
+          document.body.appendChild(ta); ta.select();
+          document.execCommand('copy'); document.body.removeChild(ta);
+        } catch(e) {}
+        copyDone();
+      }
     },
     doLogin() {
       if (this.loginUser === 'root' && this.loginPass === 'c87311923') {
