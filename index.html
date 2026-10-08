@@ -1077,12 +1077,9 @@ new Vue({
         if (!target) throw new Error('无可用 mp4 流');
         const title = (d.title || 'douyin_video').replace(/[\\/:*?"<>|\s]+/g, '_').slice(0, 60) || 'douyin_video';
         this.toast('解析成功，正在下载…', 'ok');
-        // download.php 跨域不允许 fetch，用隐藏 iframe 触发浏览器直接存盘（不导航当前页）
-        const iframe = document.createElement('iframe');
-        iframe.style.display = 'none';
-        iframe.src = target.url;
-        document.body.appendChild(iframe);
-        setTimeout(() => { try { document.body.removeChild(iframe); } catch(e){} }, 60000);
+        // download.php 有 X-Frame-Options 不能 iframe，用 window.open 新标签页触发下载
+        // 服务器返回 Content-Disposition: attachment 时浏览器会直接存 mp4，标签页自动关闭
+        window.open(target.url, '_blank');
         this.toast('视频已开始下载（浏览器下载栏查看，约 ' + (target.formattedSize || '') + '）', 'ok');
       } catch (e) {
         const msg = String(e.message || e);
