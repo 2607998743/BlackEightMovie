@@ -1053,12 +1053,44 @@ new Vue({
         return this.parseTikTok(url);
       }
       if (/douyin\.com/.test(url)) {
-        this.toast('抖音视频受签名保护，网页端无法直下（已打开原页，可用App保存或复制链接到F2下载）', 'err');
-        this.copyText(url);
-        setTimeout(() => window.open(url, '_blank'), 1200);
-        return;
+        return this.parseDouyin(url);
       }
       this.toast('无法识别视频来源', 'err');
+    },
+    async parseDouyin(url) {
+      if (!/^https?:\/\//.test(url)) { this.toast('链接格式不对', 'err'); return; }
+      this.toast('正在解析抖音视频…', 'ok');
+      try {
+        const resp = await fetch('https://snapdouyin.app/wp-json/mx-downloader/video-data/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: url })
+        });
+        if (!resp.ok) throw new Error('解析服务 HTTP ' + resp.status);
+        const d = await resp.json();
+        if (!d || !Array.isArray(d.medias) || !d.medias.length) throw new Error('未获取到下载地址');
+        // 优先选标清/标准高清 mp4（跳过 500MB+ 超大版和水印版）
+        const mp4s = d.medias.filter(m => m.extension === 'mp4' && m.videoAvailable);
+        let target = mp4s.find(m => m.quality === 'hd')
+                  || mp4s.find(m => m.quality === 'sd')
+                  || mp4s[0];
+        if (!target) throw new Error('无可用 mp4 流');
+        const title = (d.title || 'douyin_video').replace(/[\\/:*?"<>|\s]+/g, '_').slice(0, 60) || 'douyin_video';
+        this.toast('解析成功，正在下载…', 'ok');
+        // download.php 跨域不允许 fetch，用 <a download> 让浏览器直接存盘
+        const a = document.createElement('a');
+        a.href = target.url;
+        a.download = title + '.mp4';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        this.toast('视频已开始下载（浏览器下载栏查看，约 ' + (target.formattedSize || '') + '）', 'ok');
+      } catch (e) {
+        const msg = String(e.message || e);
+        this.toast('抖音解析失败：' + msg + '，已复制链接', 'err');
+        this.copyText(url);
+        setTimeout(() => window.open(url, '_blank'), 1200);
+      }
     },
     async parseTikTok(url) {
       if (!/^https?:\/\//.test(url)) { this.toast('链接格式不对', 'err'); return; }
