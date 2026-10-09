@@ -1079,8 +1079,15 @@ new Vue({
         this.toast('解析成功，正在下载…', 'ok');
         // download.php 有 X-Frame-Options 不能 iframe，用 window.open 新标签页触发下载
         // 服务器返回 Content-Disposition: attachment 时浏览器会直接存 mp4，标签页自动关闭
-        window.open(target.url, '_blank');
-        this.toast('视频已开始下载（浏览器下载栏查看，约 ' + (target.formattedSize || '') + '）', 'ok');
+        const a = document.createElement('a');
+        a.href = target.url;
+        a.download = title + '.mp4';
+        a.target = '_blank';
+        a.rel = 'noopener';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        this.toast('下载已开始！文件保存在 Windows 下载目录（约 ' + (target.formattedSize || '') + '）。新标签页若打开空白页可直接关闭。', 'ok');
       } catch (e) {
         const msg = String(e.message || e);
         this.toast('抖音解析失败：' + msg + '，已复制链接', 'err');
@@ -1713,5 +1720,5 @@ new Vue({
 })();
 </script>
 
-<div class="app-version">v2.1.7</div></body>
+<div class="app-version">v2.1.8</div></body>
 </html>
