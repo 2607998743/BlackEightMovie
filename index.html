@@ -774,6 +774,10 @@ new Vue({
       showPass: false,
       dataVersion: 0,
       syncDialogVisible: false,
+      dlVisible: false,
+      dlProgress: 0,
+      dlText: '',
+      dlSize: '',
       syncToken: '',
     }
   },
@@ -1069,30 +1073,18 @@ new Vue({
         if (!resp.ok) throw new Error('解析服务 HTTP ' + resp.status);
         const d = await resp.json();
         if (!d || !Array.isArray(d.medias) || !d.medias.length) throw new Error('未获取到下载地址');
-        // 优先选标清/标准高清 mp4（跳过 500MB+ 超大版和水印版）
         const mp4s = d.medias.filter(m => m.extension === 'mp4' && m.videoAvailable);
         let target = mp4s.find(m => m.quality === 'hd')
                   || mp4s.find(m => m.quality === 'sd')
                   || mp4s[0];
         if (!target) throw new Error('无可用 mp4 流');
-        const title = (d.title || 'douyin_video').replace(/[\\/:*?"<>|\s]+/g, '_').slice(0, 60) || 'douyin_video';
-        this.toast('解析成功，正在下载…', 'ok');
-        // download.php 有 X-Frame-Options 不能 iframe，用 window.open 新标签页触发下载
-        // 服务器返回 Content-Disposition: attachment 时浏览器会直接存 mp4，标签页自动关闭
-        // 用隐藏 iframe 静默下载（不跳转新标签页）
-        // download.php 返回 Content-Disposition: attachment，浏览器会直接存 mp4
-        const iframe = document.createElement('iframe');
-        iframe.style.cssText = 'width:0;height:0;border:0;display:none';
-        iframe.src = target.url;
-        document.body.appendChild(iframe);
-        // 10 秒后清理 iframe
-        setTimeout(() => { if(iframe.parentNode) iframe.parentNode.removeChild(iframe); }, 15000);
-        this.toast('下载已开始！文件保存在 Windows 下载目录（约 ' + (target.formattedSize || '') + '）', 'ok');
+        // 直接打开 download.php，浏览器收到 Content-Disposition: attachment 会自动下载
+        // 不跳转页面，文件存到 Windows 下载目录，进度看浏览器底部/下载栏
+        window.open(target.url, '_self');
+        this.toast('下载已开始！进度请看浏览器底部下载栏（' + (target.formattedSize || '') + '）', 'ok');
       } catch (e) {
         const msg = String(e.message || e);
-        this.toast('抖音解析失败：' + msg + '，已复制链接', 'err');
-        this.copyText(url);
-        setTimeout(() => window.open(url, '_blank'), 1200);
+        this.toast('抖音解析失败：' + msg, 'err');
       }
     },
     async parseTikTok(url) {
@@ -1720,5 +1712,5 @@ new Vue({
 })();
 </script>
 
-<div class="app-version">v2.1.9</div></body>
+<div class="app-version">v2.1.10</div></body>
 </html>
