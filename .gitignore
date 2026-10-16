@@ -1,0 +1,10 @@
+﻿__pycache__/
+*.pyc
+config.json
+*.bak
+*.bak2
+*.bak3
+*.broken
+verify.png
+*.log
+data/

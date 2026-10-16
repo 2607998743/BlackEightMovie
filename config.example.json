@@ -1,0 +1,6 @@
+﻿{
+  "dy_cookie": "你的抖音cookie（从浏览器获取）",
+  "vl_api": {"base_url": "https://api.openai.com/v1", "api_key": "sk-xxx", "model": "Qwen/Qwen2-VL-7B-Instruct"},
+  "txt_api": {"base_url": "https://api.openai.com/v1", "api_key": "sk-xxx", "model": "Qwen/Qwen2.5-7B-Instruct"},
+  "ocr_api": {"base_url": "https://api.openai.com/v1", "api_key": "sk-xxx", "model": "PaddlePaddle/PaddleOCR-VL-1.5"}
+}
